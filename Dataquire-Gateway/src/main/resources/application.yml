@@ -1,0 +1,22 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: dataquire-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: test
+          uri: lb://instance-keeper
+          predicates:
+            - Path=/api/instances/find_by_dbms/{dbms}
+            - Method=POST
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://localhost:8090/eureka"
