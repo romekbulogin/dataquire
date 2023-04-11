@@ -1,5 +1,6 @@
 package ru.dataquire.authorizationservice.service
 
+import io.jsonwebtoken.Jwts
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -62,18 +63,18 @@ class AuthenticationService(
 
     fun authentication(request: AuthenticationRequest): Any {
         try {
-            if (request.email.isNotEmpty() && request.password.isNotEmpty()) {
+            return if (request.email.isNotEmpty() && request.password.isNotEmpty()) {
                 logger.info("[Request] Authentication: $request")
                 authenticationManager.authenticate(UsernamePasswordAuthenticationToken(request.email, request.password))
                 val user = userRepository.findByEmail(request.email).orElseThrow()
-                return AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
+                AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
                     this.username = user.getNickname().toString()
                     this.email = user.getEmail()!!
                     this.isActivated = user.getIsActivated()!!
                     this.role = user.getRole()
                 })
             } else {
-                return ResponseEntity.badRequest()
+                ResponseEntity.badRequest()
             }
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -83,7 +84,7 @@ class AuthenticationService(
 
     fun refresh(token: String): Any {
         try {
-            return if (token.isNotEmpty() && token != null) {
+            return if (token.isNotEmpty()) {
                 logger.info("[Request] Refresh: $token")
                 val user = userRepository.findByEmail(jwtService.extractUsername(token.substring(7))).orElseThrow()
                 AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {

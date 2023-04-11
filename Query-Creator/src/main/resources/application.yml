@@ -1,1 +1,23 @@
+logging:
+  config: 'classpath:log4j2.yml'
+server:
+  port: 8085
+spring:
+  rabbitmq:
+    consumer:
+      exchange: query-executor-exchange
+      request:
+        queue: query-executor-queue
+        routing-key: query-executor-routing-key
 
+    username: guest
+    password: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  application:
+    name: query-executor
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://localhost:8090/eureka"

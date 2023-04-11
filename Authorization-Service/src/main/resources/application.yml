@@ -23,12 +23,19 @@ spring:
         format_sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  application:
+    name: authorization-service
 springdoc:
   swagger-ui:
     config-url: /v3/api-docs
     url: /v3/api-docs
 secret:
-  key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
+  key:
+
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://localhost:8090/eureka"
 
 logging:
   config: 'classpath:log4j2.yml'

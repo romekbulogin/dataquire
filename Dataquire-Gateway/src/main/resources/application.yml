@@ -9,12 +9,9 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
-      routes:
-        - id: test
-          uri: lb://instance-keeper
-          predicates:
-            - Path=/api/instances/find_by_dbms/{dbms}
-            - Method=POST
+
+jwt:
+  secret:
 
 eureka:
   client:
