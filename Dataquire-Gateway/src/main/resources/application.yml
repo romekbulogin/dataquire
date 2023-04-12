@@ -11,7 +11,7 @@ spring:
           lower-case-service-id: true
 
 jwt:
-  secret:
+  secret: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
 
 eureka:
   client:

@@ -1,18 +1,17 @@
 package ru.dataquire.authorizationservice.entity
 
-import jakarta.persistence.Entity
-import jakarta.persistence.GeneratedValue
-import jakarta.persistence.Id
-import jakarta.persistence.ManyToOne
-import jakarta.persistence.Table
+import jakarta.persistence.*
+import java.util.UUID
 
 @Entity
 @Table(name = "_databases")
 data class DatabaseEntity(
     @Id
-    @GeneratedValue
-    var id: Int? = null,
+    @GeneratedValue(strategy = GenerationType.UUID)
+    var id: UUID? = null,
     var dbms: String? = null,
+    @Column(unique = true)
+    var systemName: String? = null,
     var databaseName: String? = null,
     var login: String? = null,
     var passwordDbms: String? = null,

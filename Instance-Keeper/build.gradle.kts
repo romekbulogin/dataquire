@@ -13,10 +13,7 @@ java.sourceCompatibility = JavaVersion.VERSION_19
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://artifactory-oss.prod.netflix.net/artifactory/maven-oss-candidates") }
 }
-
-extra["springCloudVersion"] = "2022.0.2"
 
 dependencies {
     //Spring
@@ -34,16 +31,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
     //PostgreSQL
     implementation("org.postgresql:postgresql:42.6.0")
-    //Eureka
-    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     //Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-}
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
-    }
 }
 
 configurations {

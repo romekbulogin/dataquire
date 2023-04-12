@@ -5,9 +5,10 @@ import org.springframework.stereotype.Repository
 import ru.dataquire.authorizationservice.entity.DatabaseEntity
 import ru.dataquire.authorizationservice.entity.DatabaseEntityWithoutUser
 import ru.dataquire.authorizationservice.entity.UserEntity
+import java.util.UUID
 
 @Repository
-interface DatabaseRepository : JpaRepository<DatabaseEntity, Int> {
+interface DatabaseRepository : JpaRepository<DatabaseEntity, UUID> {
     fun findDatabaseEntityByDatabaseNameAndAndDbmsAndAndUserEntity(
         database: String,
         dbms: String,

@@ -6,13 +6,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import ru.dataquire.authorizationservice.entity.DatabaseEntity
 import ru.dataquire.authorizationservice.entity.Role
+import java.util.UUID
 
 @Entity
 @Table(name = "_user")
 class UserEntity : UserDetails {
     @Id
-    @GeneratedValue
-    private var id: Int? = null
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private var id: UUID? = null
 
     @Column(unique = true)
     private var username: String? = null

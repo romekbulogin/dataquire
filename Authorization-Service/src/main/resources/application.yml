@@ -31,7 +31,6 @@ springdoc:
     url: /v3/api-docs
 secret:
   key:
-
 eureka:
   client:
     service-url:
