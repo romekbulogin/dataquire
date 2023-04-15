@@ -48,12 +48,12 @@ services:
     ports:
       - "8080:8080"
 
-  instance_keeper:
+  instance-keeper:
     build:
       context: ./
       dockerfile: Instance-Keeper/Dockerfile
-    image: instance_keeper
-    container_name: 'instance_keeper'
+    image: instance-keeper
+    container_name: 'instance-keeper'
     ports:
       - "8084:8084"
 
