@@ -3,13 +3,7 @@ name: Java CI with Gradle
 on:
   push:
     branches: [ "master" ]
-env:
-  GITHUB_TOKEN: ${{ github.token }}
-  AUTHORIZATION_SERVICE: authorization-service
-  DATABASE_MANAGER: database_manager
-  INSTANCE_KEEPER: instance_keeper
-  DQ-EUREKA-SERVER: dataquire-eureka-server
-  DQ-GATEWAY: dataquire-gateway
+
 permissions:
   contents: read
 
@@ -41,27 +35,27 @@ jobs:
       - name: Docker-Compose Build
         run: docker compose build
 
-      - name: Push $DQ-EUREKA-SERVER to GHCR
+      - name: Push dataquire-eureka-server to GHCR
         run: |
-          docker tag $DATABASE_MANAGER ghcr.io/romekbulogin/$DATAQUIRE-EUREKA-SERVER:latest
-          docker push ghcr.io/romekbulogin/$DATAQUIRE-EUREKA-SERVER:latest
+          docker tag dataquire-eureka-server ghcr.io/romekbulogin/dataquire-eureka-server:latest
+          docker push ghcr.io/romekbulogin/dataquire-eureka-server:latest
 
-      - name: Push $DQ-GATEWAY to GHCR
+      - name: Push dataquire-gateway to GHCR
         run: |
-          docker tag $DATABASE_MANAGER ghcr.io/romekbulogin/$DATAQUIRE-GATEWAY:latest
-          docker push ghcr.io/romekbulogin/$DATAQUIRE-GATEWAY:latest
+          docker tag dataquire-gateway ghcr.io/romekbulogin/dataquire-gateway:latest
+          docker push ghcr.io/romekbulogin/dataquire-gateway:latest
 
-      - name: Push $AUTHORIZATION_SERVICE to GHCR
+      - name: Push authorization-service to GHCR
         run: |
-          docker tag $AUTHORIZATION_SERVICE ghcr.io/romekbulogin/$AUTHORIZATION_SERVICE:latest
-          docker push ghcr.io/romekbulogin/$AUTHORIZATION_SERVICE:latest
+          docker tag authorization-service ghcr.io/romekbulogin/authorization-service:latest
+          docker push ghcr.io/romekbulogin/authorization-service:latest
 
-      - name: Push $DATABASE_MANAGER to GHCR
+      - name: Push database_manager to GHCR
         run: |
-          docker tag $DATABASE_MANAGER ghcr.io/romekbulogin/$DATABASE_MANAGER:latest
-          docker push ghcr.io/romekbulogin/$DATABASE_MANAGER:latest
+          docker tag database_manager ghcr.io/romekbulogin/database_manager:latest
+          docker push ghcr.io/romekbulogin/database_manager:latest
 
-      - name: Push $INSTANCE_KEEPER to GHCR
+      - name: Push instance_keeper to GHCR
         run: |
-          docker tag $INSTANCE_MANAGER ghcr.io/romekbulogin/$INSTANCE_KEEPER:latest
-          docker push ghcr.io/romekbulogin/$INSTANCE_KEEPER:latest
+          docker tag instance_keeper ghcr.io/romekbulogin/instance_keeper:latest
+          docker push ghcr.io/romekbulogin/instance_keeper:latest
