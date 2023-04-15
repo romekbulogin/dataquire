@@ -50,12 +50,12 @@ jobs:
           docker tag authorization-service ghcr.io/romekbulogin/authorization-service:latest
           docker push ghcr.io/romekbulogin/authorization-service:latest
 
-      - name: Push database_manager to GHCR
+      - name: Push database-manager to GHCR
         run: |
-          docker tag database_manager ghcr.io/romekbulogin/database-manager:latest
+          docker tag database-manager ghcr.io/romekbulogin/database-manager:latest
           docker push ghcr.io/romekbulogin/database-manager:latest
 
-      - name: Push instance_keeper to GHCR
+      - name: Push instance-keeper to GHCR
         run: |
-          docker tag instance_keeper ghcr.io/romekbulogin/instance-keeper:latest
+          docker tag instance-keeper ghcr.io/romekbulogin/instance-keeper:latest
           docker push ghcr.io/romekbulogin/instance-keeper:latest
