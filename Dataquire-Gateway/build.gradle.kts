@@ -8,8 +8,8 @@ plugins {
 }
 
 group = "ru.dataquire"
-version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_19
+version = "0.0.1"
+java.sourceCompatibility = JavaVersion.VERSION_18
 
 repositories {
     mavenCentral()
@@ -38,7 +38,7 @@ dependencyManagement {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "19"
+        jvmTarget = "18"
     }
 }
 

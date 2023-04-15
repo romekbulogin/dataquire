@@ -11,7 +11,7 @@ eureka:
     service-url:
       defaultZone: "http://localhost:8090/eureka"
 secret:
-  key:
+  key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
 logging:
   config: 'classpath:log4j2.yml'
 server:

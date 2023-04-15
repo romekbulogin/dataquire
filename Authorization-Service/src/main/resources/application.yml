@@ -30,7 +30,7 @@ springdoc:
     config-url: /v3/api-docs
     url: /v3/api-docs
 secret:
-  key:
+  key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
 eureka:
   client:
     service-url:

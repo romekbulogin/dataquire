@@ -7,5 +7,7 @@ data class InstanceEntity(
     var username: String? = null,
     var password: String? = null,
     var dbms: String? = null,
-    var sqlCreateUser: String? = null
+    var sqlCreateUser: String? = null,
+    var sqlUpdateUsername: String? = null,
+    var sqlUpdatePassword: String? = null
 )

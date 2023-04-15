@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "ru.dataquire"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 java.sourceCompatibility = JavaVersion.VERSION_19
 
 repositories {
@@ -38,7 +38,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
     //Eureka
-//    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
+    implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
     //Feign
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign:4.0.2")
     //Apache
@@ -49,6 +49,10 @@ dependencies {
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+    //Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+    implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
+    implementation("org.springframework.boot:spring-boot-starter-validation:3.0.5")
     //Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

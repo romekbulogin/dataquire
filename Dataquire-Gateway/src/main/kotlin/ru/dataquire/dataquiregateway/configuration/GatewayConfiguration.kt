@@ -10,10 +10,10 @@ class GatewayConfiguration(private val authenticationFilter: AuthenticationFilte
     @Bean
     fun routes(builder: RouteLocatorBuilder): RouteLocator? {
         return builder.routes()
-            .route("instance-keeper") { r ->
-                r.path("/api/instances/**")
+            .route("database-manager") { r ->
+                r.path("/api/database/**")
                     .filters { f -> f.filter(authenticationFilter) }
-                    .uri("lb://instance-keeper")
+                    .uri("lb://database-manager")
             }
             .route("authorization-service") { r ->
                 r.path("/api/auth/**")

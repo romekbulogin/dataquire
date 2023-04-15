@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "ru.dataquire"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 java.sourceCompatibility = JavaVersion.VERSION_19
 
 repositories {
@@ -47,6 +47,10 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
     //Eureka
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-client")
+    //Swagger
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+    implementation("org.springdoc:springdoc-openapi-ui:1.7.0")
+    implementation("org.springframework.boot:spring-boot-starter-validation:3.0.5")
     //Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test:6.0.2")

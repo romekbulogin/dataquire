@@ -1,0 +1,86 @@
+version: '3'
+
+services:
+  #  udbms_users:
+  #    image: postgres:15
+  #    container_name: 'udbms_users'
+  #    environment:
+  #      - 'POSTGRES_USER=postgres'
+  #      - 'POSTGRES_HOST_AUTH_METHOD=trust'
+  #      - 'POSTGRES_DB=udbms_users'
+
+  #  rabbitmq:
+  #    image: rabbitmq:3.11.8-management
+  #    restart: always
+  #    environment:
+  #      - RABBITMQ_DEFAULT_USER=admin
+  #      - RABBITMQ_DEFAULT_PASS=admin
+  #      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+  #    volumes:
+  #      - ./rabbitmq:/var/lib/rabbitmq
+  #    ports:
+  #      - "15672:15672"
+  #      - "5672:5672"
+  dataquire-eureka-server:
+    build:
+      dockerfile: ./Dataquire-Eureka-Server/Dockerfile
+      context: .
+    image: dataquire-eureka-server
+    container_name: 'dataquire-eureka-server'
+    ports:
+      - "8090:8090"
+
+  dataquire-gateway:
+    build:
+      dockerfile: ./Dataquire-Gateway/Dockerfile
+      context: .
+    image: dataquire-gateway
+    container_name: 'dataquire-gateway'
+    ports:
+      - "8081:8081"
+
+  authorization-service:
+    build:
+      context: ./
+      dockerfile: Authorization-Service/Dockerfile
+    image: authorization-service
+    container_name: 'authorization-service'
+    ports:
+      - "8080:8080"
+
+  instance_keeper:
+    build:
+      context: ./
+      dockerfile: Instance-Keeper/Dockerfile
+    image: instance_keeper
+    container_name: 'instance_keeper'
+    ports:
+      - "8084:8084"
+
+  database-manager:
+    build:
+      dockerfile: ./Database-Manager/Dockerfile
+      context: .
+    image: database-manager
+    container_name: 'database-manager'
+    ports:
+      - "8085:8085"
+#  query-executor:
+#    build:
+#      dockerfile: ./Query-Executor/Dockerfile
+#      context: .
+#    image: query-executor
+#    container_name: 'query-executor'
+#    depends_on:
+#      - rabbitmq
+#    ports:
+#      - "8082:8082"
+#
+#  table-manager:
+#    build:
+#      dockerfile: ./Table-Manager/Dockerfile
+#      context: .
+#    image: table-manager
+#    container_name: 'table-manager'
+#    ports:
+#      - "8083:8083"

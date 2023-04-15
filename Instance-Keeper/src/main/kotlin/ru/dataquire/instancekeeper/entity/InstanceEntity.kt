@@ -17,5 +17,9 @@ data class InstanceEntity(
     @Column(name = "dbms", nullable = false)
     var dbms: String? = null,
     @Column(name = "sql_create_user", nullable = false)
-    var sqlCreateUser: String? = null
+    var sqlCreateUser: String? = null,
+    @Column(name = "sql_update_username", nullable = false)
+    var sqlUpdateUsername: String? = null,
+    @Column(name = "sql_update_password", nullable = false)
+    var sqlUpdatePassword: String? = null
 )

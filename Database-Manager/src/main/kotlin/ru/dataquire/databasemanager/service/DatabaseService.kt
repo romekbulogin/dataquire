@@ -2,18 +2,21 @@ package ru.dataquire.databasemanager.service
 
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
+import org.jooq.User
+import org.jooq.impl.DSL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import ru.dataquire.databasemanager.dto.UserCredentials
 import ru.dataquire.databasemanager.entity.DatabaseEntity
 import ru.dataquire.databasemanager.feign.InstancesManagerClient
 import ru.dataquire.databasemanager.feign.request.FindInstance
 import ru.dataquire.databasemanager.feign.request.InstanceEntity
 import ru.dataquire.databasemanager.repository.DatabaseRepository
 import ru.dataquire.databasemanager.repository.UserRepository
+import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
 import ru.dataquire.databasemanager.request.DatabaseRequest
 import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
-import ru.dataquire.databasemanager.response.*
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
@@ -89,7 +92,7 @@ class DatabaseService(
         }
     }
 
-    fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Any> {
+    fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
             val database = findDriver(request.dbms.toString())
             val connection = DriverManager.getConnection(database?.url, database?.username, database?.password)
@@ -111,10 +114,11 @@ class DatabaseService(
             )
         } catch (ex: Exception) {
             logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
-            ResponseEntity(FailedDeletedDatabase().apply {
-                error = "Database deletion error: ${request.database}"
-                exception = ex.message
-            }, HttpStatus.BAD_REQUEST)
+            ResponseEntity(
+                mapOf(
+                    "error" to "Database deletion error: ${request.database}"
+                ), HttpStatus.BAD_REQUEST
+            )
         }
     }
 
@@ -157,7 +161,41 @@ class DatabaseService(
         }
     }
 
-    private fun createUser(instance: InstanceEntity): CreateUserResponse {
+    fun updateCredentials(request: ChangeCredentialsRequest, token: String): ResponseEntity<Map<String, Any>> {
+        return try {
+            val instance = findDriver(request.dbms!!)
+            val connection = DriverManager.getConnection(instance?.url, instance?.username, instance?.password)
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
+                    request.database.toString(),
+                    request.dbms.toString(),
+                    request.systemName.toString()
+                )
+            val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
+            val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
+
+            connection.createStatement().execute(
+                instance?.sqlUpdateUsername?.replace("oldusername", currentDatabase.login!!)
+                    ?.replace("newusername", login)
+            )
+            connection.createStatement().execute(
+                instance?.sqlUpdatePassword?.replace("usertag", login)
+                    ?.replace("passtag", password)
+            )
+            connection.close()
+            return ResponseEntity(mapOf("login" to "", "password" to ""), HttpStatus.OK)
+        } catch (ex: Exception) {
+            logger.error("Change user credentials error: ${request.database}. Exception: ${ex.message}")
+            ResponseEntity(
+                mapOf(
+                    "error" to "Change user credentials error: ${request.database}"
+                ), HttpStatus.BAD_REQUEST
+            )
+        }
+    }
+
+    private fun createUser(instance: InstanceEntity): UserCredentials {
         return try {
             val connection = DriverManager.getConnection(instance.url, instance.username, instance.password)
 
@@ -169,7 +207,7 @@ class DatabaseService(
                     ?.replace("passtag", password)
             )
             connection.close()
-            CreateUserResponse(login, password)
+            UserCredentials(login, password)
         } catch (ex: SQLException) {
             logger.error(ex.message)
             throw ex

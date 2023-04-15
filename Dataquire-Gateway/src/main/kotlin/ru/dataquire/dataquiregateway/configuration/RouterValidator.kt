@@ -7,7 +7,8 @@ import java.util.function.Predicate
 @Component
 class RouterValidator {
     val openApiEndpoints = listOf(
-        "/api/auth/authentication"
+        "/api/auth/authentication",
+        "/api/auth/registration"
     )
 
     var isSecured: Predicate<ServerHttpRequest> = Predicate<ServerHttpRequest> { request ->

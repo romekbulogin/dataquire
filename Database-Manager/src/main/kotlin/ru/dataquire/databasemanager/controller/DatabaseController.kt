@@ -4,6 +4,7 @@ package ru.dataquire.databasemanager.controller
 import mu.KotlinLogging
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
 import ru.dataquire.databasemanager.request.DatabaseRequest
 import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
 import ru.dataquire.databasemanager.service.DatabaseService
@@ -11,7 +12,7 @@ import ru.dataquire.databasemanager.service.DatabaseService
 @RestController
 @RequestMapping("/api/database")
 class DatabaseController(
-    private val dataBaseService: DatabaseService,
+    private val databaseService: DatabaseService,
 ) {
     private val logger = KotlinLogging.logger { }
 
@@ -21,16 +22,16 @@ class DatabaseController(
         @RequestHeader("Authorization") token: String
     ): ResponseEntity<Map<String, String?>> {
         logger.info("Request for create database: $request")
-        return dataBaseService.createDatabase(request, token)
+        return databaseService.createDatabase(request, token)
     }
 
     @PostMapping("/delete")
     fun deleteDatabase(
         @RequestBody request: DeleteDatabaseRequest,
         @RequestHeader("Authorization") token: String
-    ): ResponseEntity<Any> {
+    ): ResponseEntity<Map<String, Any>> {
         logger.info("Request for delete database: $request")
-        return dataBaseService.deleteDatabase(request, token)
+        return databaseService.deleteDatabase(request, token)
     }
 
     @GetMapping("/my")
@@ -38,7 +39,7 @@ class DatabaseController(
         @RequestHeader("Authorization") token: String
     ): ResponseEntity<Map<String, Any>> {
         logger.info("Request for view databases")
-        return dataBaseService.findAllDatabases(token)
+        return databaseService.findAllDatabases(token)
     }
 
     @GetMapping("/{systemName}")
@@ -47,6 +48,15 @@ class DatabaseController(
         @RequestHeader("Authorization") token: String
     ): ResponseEntity<Map<String, Any>> {
         logger.info("Request for view databases")
-        return dataBaseService.findDatabase(token, systemName)
+        return databaseService.findDatabase(token, systemName)
+    }
+
+    @PostMapping("/credentials/change")
+    fun updateCredentials(
+        @RequestBody request: ChangeCredentialsRequest,
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<Map<String, Any>> {
+        logger.info("Request for update credentials")
+        return databaseService.updateCredentials(request, token)
     }
 }
