@@ -8,8 +8,8 @@ env:
   AUTHORIZATION_SERVICE: authorization-service
   DATABASE_MANAGER: database_manager
   INSTANCE_KEEPER: instance_keeper
-  DATAQUIRE-EUREKA-SERVER: dataquire-eureka-server
-  DATAQUIRE-GATEWAY: dataquire-gateway
+  DQ-EUREKA-SERVER: dataquire-eureka-server
+  DQ-GATEWAY: dataquire-gateway
 permissions:
   contents: read
 
@@ -41,12 +41,12 @@ jobs:
       - name: Docker-Compose Build
         run: docker compose build
 
-      - name: Push $DATAQUIRE-EUREKA-SERVER to GHCR
+      - name: Push $DQ-EUREKA-SERVER to GHCR
         run: |
           docker tag $DATABASE_MANAGER ghcr.io/romekbulogin/$DATAQUIRE-EUREKA-SERVER:latest
           docker push ghcr.io/romekbulogin/$DATAQUIRE-EUREKA-SERVER:latest
 
-      - name: Push $DATAQUIRE-GATEWAY to GHCR
+      - name: Push $DQ-GATEWAY to GHCR
         run: |
           docker tag $DATABASE_MANAGER ghcr.io/romekbulogin/$DATAQUIRE-GATEWAY:latest
           docker push ghcr.io/romekbulogin/$DATAQUIRE-GATEWAY:latest
