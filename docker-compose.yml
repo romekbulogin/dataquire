@@ -28,7 +28,7 @@ services:
     image: dataquire-eureka-server
     container_name: 'dataquire-eureka-server'
     ports:
-      - "8090:8090"
+      - "8761:8761"
 
   dataquire-gateway:
     build:

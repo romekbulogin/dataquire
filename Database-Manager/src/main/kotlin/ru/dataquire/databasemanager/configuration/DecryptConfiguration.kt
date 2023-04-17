@@ -25,8 +25,9 @@ class DecryptConfiguration {
         Security.addProvider(
             BouncyCastleProvider()
         )
+        val res = javaClass.classLoader.getResource("privatekey.pem")
         val key = String(
-            Files.readAllBytes(Paths.get("Database-Manager\\src\\main\\resources\\privatekey.pem")),
+            Files.readAllBytes(Paths.get(res.toURI())),
             Charset.defaultCharset()
         )
 
