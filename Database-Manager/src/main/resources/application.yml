@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://udbmsuser/udbms_users
+    url: jdbc:postgresql://185.124.64.2:5432/udbms_users
     username: postgres
     password: 1337
     driver-class-name: org.postgresql.Driver
