@@ -59,4 +59,7 @@ class DatabaseController(
         logger.info("Request for update credentials")
         return databaseService.updateCredentials(request, token)
     }
+
+    @GetMapping("/dbms")
+    fun getDbmsList() = databaseService.getDbmsList()
 }

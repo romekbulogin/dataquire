@@ -195,6 +195,8 @@ class DatabaseService(
         }
     }
 
+    fun getDbmsList() = ResponseEntity(listOf("PostgreSQL", "MySQL", "MSSQL", "Oracle"), HttpStatus.OK)
+
     private fun createUser(instance: InstanceEntity): UserCredentials {
         return try {
             val connection = DriverManager.getConnection(instance.url, instance.username, instance.password)

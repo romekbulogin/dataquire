@@ -1,15 +1,19 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/udbms_users
+    url: jdbc:postgresql://udbmsuser/udbms_users
     username: postgres
     password: 1337
     driver-class-name: org.postgresql.Driver
   application:
     name: database-manager
+springdoc:
+  swagger-ui:
+    config-url: /v3/api-docs
+    url: /v3/api-docs
 eureka:
   client:
     service-url:
-      defaultZone: "http://localhost:8090/eureka"
+      defaultZone: "http://185.124.64.2:8090/eureka"
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
 logging:

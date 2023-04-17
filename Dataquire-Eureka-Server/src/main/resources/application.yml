@@ -5,7 +5,5 @@ spring:
     name: dataquire-eureka-server
 eureka:
   client:
-    service-url:
-      defaultZone: "http://localhost:8090/eureka"
     register-with-eureka: false
     fetch-registry: false

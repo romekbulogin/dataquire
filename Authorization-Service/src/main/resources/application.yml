@@ -11,7 +11,7 @@ spring:
           starttls:
             enable: true
   datasource:
-    url: jdbc:postgresql://localhost:5432/udbms_users
+    url: jdbc:postgresql://udbmsuser/udbms_users
     username: postgres
     password: 1337
     driver-class-name: org.postgresql.Driver
@@ -34,7 +34,7 @@ secret:
 eureka:
   client:
     service-url:
-      defaultZone: "http://localhost:8090/eureka"
+      defaultZone: "http://185.124.64.2:8090/eureka"
 
 logging:
   config: 'classpath:log4j2.yml'
