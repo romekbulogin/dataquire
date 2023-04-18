@@ -44,7 +44,7 @@ class AuthenticationService(
                 mailService.sendMessageVerify(
                     request.email,
                     "Verify your email",
-                    "http://localhost:8080/api/auth/verify/${user.getActivatedUUID()}"
+                    "http://185.124.64.2:8081/api/auth/verify/${user.getActivatedUUID()}"
                 )
                 return AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
                     this.username = user.getNickname().toString()

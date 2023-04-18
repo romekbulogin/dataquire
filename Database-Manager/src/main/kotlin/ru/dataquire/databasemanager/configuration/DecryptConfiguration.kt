@@ -62,7 +62,7 @@ class DecryptConfiguration {
 
         val privateKeyResult = privateKey
             ?.replace("-----BEGIN RSA PRIVATE KEY-----", "")
-            ?.replace(System.lineSeparator().toRegex(), "")
+            ?.replace("\n", "")
             ?.replace("-----END RSA PRIVATE KEY-----", "")
 
         val encoded: ByteArray = Base64.getDecoder().decode(privateKeyResult)
