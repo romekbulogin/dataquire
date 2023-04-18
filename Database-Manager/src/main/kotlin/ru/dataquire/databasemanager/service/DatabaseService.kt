@@ -2,14 +2,12 @@ package ru.dataquire.databasemanager.service
 
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
-import org.jooq.User
-import org.jooq.impl.DSL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import ru.dataquire.databasemanager.dto.UserCredentials
 import ru.dataquire.databasemanager.entity.DatabaseEntity
-import ru.dataquire.databasemanager.feign.InstancesManagerClient
+import ru.dataquire.databasemanager.feign.InstanceKeeperClient
 import ru.dataquire.databasemanager.feign.request.FindInstance
 import ru.dataquire.databasemanager.feign.request.InstanceEntity
 import ru.dataquire.databasemanager.repository.DatabaseRepository
@@ -26,7 +24,7 @@ import javax.crypto.Cipher
 
 @Service
 class DatabaseService(
-    private val instancesManagerClient: InstancesManagerClient,
+    private val instanceKeeperClient: InstanceKeeperClient,
     private val userRepository: UserRepository,
     private val databaseRepository: DatabaseRepository,
     private val jwtService: JwtService,
@@ -35,7 +33,7 @@ class DatabaseService(
     private val logger = KotlinLogging.logger { }
     fun findDriver(driverName: String): InstanceEntity? {
         return try {
-            instancesManagerClient.findInstanceByDbms(FindInstance(driverName))
+            instanceKeeperClient.findInstanceByDbms(FindInstance(driverName))
         } catch (ex: Exception) {
             logger.error(ex.message)
             throw RuntimeException("DBMS url not found")

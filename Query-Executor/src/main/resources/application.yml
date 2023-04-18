@@ -1,35 +1,17 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://185.124.64.2:5432/udbms_users
-    username: postgres
-    password: 1337
-    driver-class-name: org.postgresql.Driver
-  application:
-    name: database-manager
 springdoc:
   swagger-ui:
     config-url: /v3/api-docs
     url: /v3/api-docs
-feign:
-  instance-keeper:
-    address: http://85.193.90.72:8084/
 eureka:
   client:
     service-url:
       defaultZone: "http://185.124.64.2:8761/eureka"
   instance:
-    ip-address: 85.193.90.72
+    #    ip-address: 85.193.90.72
     prefer-ip-address: true
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
   rsa:
-    public: |
-      -----BEGIN PUBLIC KEY-----
-      MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDDiRRjRBbehnt57I29IA3D0EFA
-      eaRhFMWKDOh7sE83TbUQgrHsADXzvupEOFg5AvRWAjPNDyPifiQ41J/onuMejETM
-      3aA39abe1/AjmnrhYoDMBCubpERwDzI5K0U8JCEmMOg6hnT0J1+G0pIlTZdjVpx0
-      auZrLVWGSQAimw1YwQIDAQAB
-      -----END PUBLIC KEY-----
     private: |
       -----BEGIN RSA PRIVATE KEY-----
       MIICXQIBAAKBgQDDiRRjRBbehnt57I29IA3D0EFAeaRhFMWKDOh7sE83TbUQgrHs
@@ -49,4 +31,29 @@ secret:
 logging:
   config: 'classpath:log4j2.yml'
 server:
-  port: 8085
+  port: 8086
+feign:
+  instance-keeper:
+    address: http://85.193.90.72:8084/
+database:
+  url: "jdbc:postgresql://185.124.64.2:5432/udbms_users"
+  username: "postgres"
+  password: "1337"
+spring:
+  rabbitmq:
+    consumer:
+      exchange: query-executor-exchange
+      request:
+        queue: query-executor-queue
+        routing-key: query-executor-routing-key
+      response:
+        queue-response: query-executor-queue-response
+        routing-key-response: query-executor-routing-key-response
+
+    username: guest
+    password: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+  application:
+    name: query-executor
