@@ -20,6 +20,7 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
+import kotlin.math.log
 
 
 @Service
@@ -184,10 +185,11 @@ class DatabaseService(
             connection.close()
             with(currentDatabase) {
                 this.login = login
-                this.passwordDbms = password
+                this.passwordDbms = Base64.getEncoder()
+                    .encodeToString(encryptCipher.doFinal(password.toByteArray(Charsets.UTF_8)))
             }
             databaseRepository.save(currentDatabase)
-            return ResponseEntity(mapOf("login" to "", "password" to ""), HttpStatus.OK)
+            return ResponseEntity(mapOf("login" to login, "password" to password), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error("Change user credentials error: ${request.database}. Exception: ${ex.message}")
             ResponseEntity(
