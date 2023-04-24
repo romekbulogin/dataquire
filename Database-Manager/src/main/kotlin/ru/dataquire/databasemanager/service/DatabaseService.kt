@@ -165,14 +165,14 @@ class DatabaseService(
             val connection = DriverManager.getConnection(instance?.url, instance?.username, instance?.password)
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
-                databaseRepository.findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
-                    request.database.toString(),
+                databaseRepository.findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
+                    currentUser,
                     request.dbms.toString(),
-                    request.systemName.toString()
+                    request.systemName.toString(),
+                    request.database.toString()
                 )
             val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
             val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
-
             connection.createStatement().execute(
                 instance?.sqlUpdateUsername?.replace("oldusername", currentDatabase.login!!)
                     ?.replace("newusername", login)
@@ -182,6 +182,11 @@ class DatabaseService(
                     ?.replace("passtag", password)
             )
             connection.close()
+            with(currentDatabase) {
+                this.login = login
+                this.passwordDbms = password
+            }
+            databaseRepository.save(currentDatabase)
             return ResponseEntity(mapOf("login" to "", "password" to ""), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error("Change user credentials error: ${request.database}. Exception: ${ex.message}")
