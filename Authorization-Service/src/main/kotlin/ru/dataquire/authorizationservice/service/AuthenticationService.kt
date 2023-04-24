@@ -44,7 +44,7 @@ class AuthenticationService(
                 mailService.sendMessageVerify(
                     request.email,
                     "Verify your email",
-                    "http://185.124.64.2:8081/api/auth/verify/${user.getActivatedUUID()}"
+                    "http://www.dataquire.ru:8081/api/auth/verify/${user.getActivatedUUID()}"
                 )
                 return AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
                     this.username = user.getNickname().toString()
@@ -123,7 +123,7 @@ class AuthenticationService(
             mailService.sendMessageVerify(
                 currentUser.getEmail().toString(),
                 "Verify your email",
-                "http://localhost:8080/api/auth/verify/${uuid}"
+                "http://www.dataquire.ru:8081/api/auth/verify/${uuid}"
             )
             mapOf("status" to "send message verify")
         } catch (ex: Exception) {
