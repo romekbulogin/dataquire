@@ -4,6 +4,8 @@ import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.web.server.SecurityWebFilterChain
 
 @Configuration
 class GatewayConfiguration(private val authenticationFilter: AuthenticationFilter) {
@@ -21,5 +23,12 @@ class GatewayConfiguration(private val authenticationFilter: AuthenticationFilte
                     .uri("lb://authorization-service")
             }
             .build()
+    }
+
+    @Bean
+    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain? {
+        http
+            .csrf { csrf -> csrf.disable() }
+        return http.build()
     }
 }
