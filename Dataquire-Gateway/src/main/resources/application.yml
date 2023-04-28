@@ -8,11 +8,10 @@ spring:
       globalcors:
         corsConfigurations:
           '[/**]':
+            allowCredentials: true
             allowedOrigins: "http://localhost:3000"
             allowedHeaders: "*"
-            allowedMethods:
-              - GET
-              - POST
+            allowedMethods: "*"
       discovery:
         locator:
           enabled: true
