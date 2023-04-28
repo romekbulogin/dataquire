@@ -20,7 +20,7 @@ class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
             .allowCredentials(true)
-            .allowedOrigins("*", "http://localhost:3000", "http://localhost:3000/")
+            .allowedOrigins("http://localhost:3000")
             .allowedHeaders("*")
             .allowedMethods("*")
     }
@@ -39,9 +39,7 @@ class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
         corsConfiguration.allowCredentials = true
         corsConfiguration.addAllowedHeader("*")
         corsConfiguration.addAllowedMethod("*")
-        corsConfiguration.addAllowedOrigin("*")
         corsConfiguration.addAllowedOrigin("http://localhost:3000")
-        corsConfiguration.addAllowedOrigin("http://localhost:3000/")
         val corsConfigurationSource = UrlBasedCorsConfigurationSource()
         corsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration)
         return CorsWebFilter(corsConfigurationSource)
