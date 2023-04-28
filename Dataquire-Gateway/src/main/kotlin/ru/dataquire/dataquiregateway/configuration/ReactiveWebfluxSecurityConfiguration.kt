@@ -13,9 +13,7 @@ import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.config.WebFluxConfigurer
 
 
-@Configuration
-@EnableWebFlux
-@EnableWebFluxSecurity
+
 class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
@@ -25,7 +23,7 @@ class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
             .allowedMethods("*")
     }
 
-    @Bean
+//    @Bean
     fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain? {
         http
             .csrf { csrf -> csrf.disable() }
@@ -33,7 +31,7 @@ class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
         return http.build()
     }
 
-    @Bean
+//    @Bean
     fun corsWebFilter(): CorsWebFilter? {
         val corsConfiguration = CorsConfiguration()
         corsConfiguration.allowCredentials = true
