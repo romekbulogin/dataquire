@@ -27,7 +27,7 @@ class ReactiveWebfluxSecurityConfiguration {
     @Bean
     fun corsWebFilter(): CorsWebFilter? {
         val corsConfig = CorsConfiguration()
-        corsConfig.allowedOrigins = listOf("*", "**", "http://localhost:3000/")
+        corsConfig.allowedOrigins = listOf("*", "**", "http://localhost:3000/", "http://localhost:3000")
         corsConfig.addAllowedMethod(HttpMethod.GET)
         corsConfig.addAllowedMethod(HttpMethod.POST)
         corsConfig.addAllowedHeader("*")
