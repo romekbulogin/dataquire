@@ -86,7 +86,7 @@ class QueryConsumer(
         return try {
             val userCredentials = UserCredentials()
             val statement =
-                mainDatabaseInstance.connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where username = ? and database_name = ?")
+                mainDatabaseInstance.connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where username = ? and system_name = ?")
             statement.setString(1, username)
             statement.setString(2, database)
             val resultSet = statement.executeQuery()

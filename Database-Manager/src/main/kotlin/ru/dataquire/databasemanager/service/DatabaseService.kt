@@ -4,6 +4,7 @@ import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.stereotype.Service
 import ru.dataquire.databasemanager.dto.UserCredentials
 import ru.dataquire.databasemanager.entity.DatabaseEntity
@@ -20,7 +21,6 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
-import kotlin.math.log
 
 
 @Service
@@ -29,7 +29,8 @@ class DatabaseService(
     private val userRepository: UserRepository,
     private val databaseRepository: DatabaseRepository,
     private val jwtService: JwtService,
-    private val encryptCipher: Cipher
+    private val encryptCipher: Cipher,
+    private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
     fun findDriver(driverName: String): InstanceEntity? {
@@ -91,6 +92,7 @@ class DatabaseService(
         }
     }
 
+    //добавить удаление юзера БД
     fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
             val database = findDriver(request.dbms.toString())
@@ -144,7 +146,7 @@ class DatabaseService(
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             ResponseEntity(
                 mapOf(
-                    "databases" to databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
+                    "database" to databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
                         currentUser,
                         systemName
                     )
@@ -218,6 +220,33 @@ class DatabaseService(
         } catch (ex: SQLException) {
             logger.error(ex.message)
             throw ex
+        }
+    }
+
+    fun getTablesOfDatabase(token: String, systemName: String): ResponseEntity<Any> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
+            val instance = findDriver(currentDatabase.dbms.toString())
+            val connection = DriverManager.getConnection(
+                "${instance?.url}${currentDatabase.systemName}",
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            )
+            val tables = mutableListOf<String>()
+
+            val rs = connection.metaData.getTables(connection.catalog, connection.schema, "%", null)
+            while (rs.next()) {
+                tables.add(rs.getString(3))
+            }
+            ResponseEntity(tables, HttpStatus.OK)
+        } catch (ex: Exception) {
+            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
         }
     }
 }

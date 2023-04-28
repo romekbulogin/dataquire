@@ -1,11 +1,10 @@
-package ru.dataquire.databasemanager.repository
+package ru.dataquire.tablemanager.repository
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
-import ru.dataquire.databasemanager.dto.Database
-import ru.dataquire.databasemanager.dto.DatabaseForList
-import ru.dataquire.databasemanager.entity.DatabaseEntity
-import ru.dataquire.databasemanager.entity.UserEntity
+import ru.dataquire.tablemanager.dto.DatabaseForList
+import ru.dataquire.tablemanager.entity.DatabaseEntity
+import ru.dataquire.tablemanager.entity.UserEntity
 import java.util.UUID
 
 @Repository

@@ -107,6 +107,7 @@ class AuthenticationService(
             logger.debug("Verify by UUID: $uuid")
             val user = userRepository.findByActivatedUUID(uuid)
             user.setIsActivated(true)
+            user.setRole(Role.USER)
             userRepository.save(user)
             ResponseEntity(mapOf("verify" to "success"), HttpStatus.OK)
         } catch (ex: Exception) {

@@ -32,7 +32,7 @@ class AuthenticationFilter(
             if (jwtUtil.isInvalid(token!!))
                 return this.onError(exchange, "Authorization header is invalid", HttpStatus.UNAUTHORIZED);
 
-            this.populateRequestWithHeaders(exchange, token!!);
+            this.populateRequestWithHeaders(exchange, token);
         }
         return chain!!.filter(exchange)
     }
