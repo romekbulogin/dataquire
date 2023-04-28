@@ -5,6 +5,14 @@ spring:
     name: dataquire-gateway
   cloud:
     gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedHeaders: "*"
+            allowedMethods:
+              - GET
+              - POST
       discovery:
         locator:
           enabled: true
