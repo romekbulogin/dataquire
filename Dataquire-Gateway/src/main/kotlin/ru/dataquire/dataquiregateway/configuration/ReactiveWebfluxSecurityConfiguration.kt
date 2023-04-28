@@ -34,14 +34,14 @@ class ReactiveWebfluxSecurityConfiguration : WebFluxConfigurer {
     }
 
 //    @Bean
-    fun corsWebFilter(): CorsWebFilter? {
-        val corsConfiguration = CorsConfiguration()
-        corsConfiguration.allowCredentials = true
-        corsConfiguration.addAllowedHeader("*")
-        corsConfiguration.addAllowedMethod("*")
-        corsConfiguration.addAllowedOrigin("http://localhost:3000")
-        val corsConfigurationSource = UrlBasedCorsConfigurationSource()
-        corsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration)
-        return CorsWebFilter(corsConfigurationSource)
-    }
+//    fun corsWebFilter(): CorsWebFilter? {
+//        val corsConfiguration = CorsConfiguration()
+//        corsConfiguration.allowCredentials = true
+//        corsConfiguration.addAllowedHeader("*")
+//        corsConfiguration.addAllowedMethod("*")
+//        corsConfiguration.addAllowedOrigin("http://localhost:3000")
+//        val corsConfigurationSource = UrlBasedCorsConfigurationSource()
+//        corsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration)
+//        return CorsWebFilter(corsConfigurationSource)
+//    }
 }
