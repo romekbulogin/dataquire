@@ -123,13 +123,11 @@ class DatabaseService(
         }
     }
 
-    fun findAllDatabases(token: String): ResponseEntity<Map<String, Any>> {
+    fun findAllDatabases(token: String): ResponseEntity<Any> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             ResponseEntity(
-                mapOf(
-                    "databases" to databaseRepository.findAllByUserEntity(currentUser)
-                ), HttpStatus.OK
+                databaseRepository.findAllByUserEntity(currentUser), HttpStatus.OK
             )
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -141,15 +139,13 @@ class DatabaseService(
         }
     }
 
-    fun findDatabase(token: String, systemName: String): ResponseEntity<Map<String, Any>> {
+    fun findDatabase(token: String, systemName: String): ResponseEntity<Any> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             ResponseEntity(
-                mapOf(
-                    "database" to databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
-                        currentUser,
-                        systemName
-                    )
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
+                    currentUser,
+                    systemName
                 ), HttpStatus.OK
             )
         } catch (ex: Exception) {

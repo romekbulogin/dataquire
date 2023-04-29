@@ -37,7 +37,7 @@ class DatabaseController(
     @GetMapping("/my")
     fun viewDatabases(
         @RequestHeader("Authorization") token: String
-    ): ResponseEntity<Map<String, Any>> {
+    ): ResponseEntity<Any> {
         logger.info("Request for view databases")
         return databaseService.findAllDatabases(token)
     }
@@ -46,7 +46,7 @@ class DatabaseController(
     fun viewDatabase(
         @PathVariable(name = "systemName") systemName: String,
         @RequestHeader("Authorization") token: String
-    ): ResponseEntity<Map<String, Any>> {
+    ): ResponseEntity<Any> {
         logger.info("Request for view databases")
         return databaseService.findDatabase(token, systemName)
     }
