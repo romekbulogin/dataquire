@@ -38,12 +38,12 @@ class ApplicationConfiguration(private val userRepository: UserRepository) {
     fun authenticationManager(authenticationConfiguration: AuthenticationConfiguration): AuthenticationManager =
         authenticationConfiguration.authenticationManager
 
-    @Bean
-    fun corsConfigurer(): WebMvcConfigurer? {
-        return object : WebMvcConfigurer {
-            override fun addCorsMappings(registry: CorsRegistry) {
-                registry.addMapping("/**").allowedOrigins("https://kommentator1.github.io","https://kommentator1.github.io/mora-front","http://localhost:3000").allowCredentials(true)
-            }
-        }
-    }
+//    @Bean
+//    fun corsConfigurer(): WebMvcConfigurer? {
+//        return object : WebMvcConfigurer {
+//            override fun addCorsMappings(registry: CorsRegistry) {
+//                registry.addMapping("/**").allowedOrigins("https://kommentator1.github.io","https://kommentator1.github.io/mora-front","http://localhost:3000").allowCredentials(true)
+//            }
+//        }
+//    }
 }
