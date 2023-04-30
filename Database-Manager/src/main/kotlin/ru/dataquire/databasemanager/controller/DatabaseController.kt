@@ -20,7 +20,7 @@ class DatabaseController(
     fun createDatabase(
         @RequestBody request: DatabaseRequest,
         @RequestHeader("Authorization") token: String
-    ): ResponseEntity<Map<String, String?>> {
+    ): ResponseEntity<Map<String, String>> {
         logger.info("Request for create database: $request")
         return databaseService.createDatabase(request, token)
     }
@@ -49,6 +49,15 @@ class DatabaseController(
     ): ResponseEntity<Any> {
         logger.info("Request for view databases")
         return databaseService.findDatabase(token, systemName)
+    }
+
+    @GetMapping("/{dbms}")
+    fun viewDatabaseInDBMS(
+        @PathVariable(name = "dbms") dbms: String,
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<Any> {
+        logger.info("Request for view databases")
+        return databaseService.findDatabaseInDBMS(token, dbms)
     }
 
     @PostMapping("/credentials/change")

@@ -42,7 +42,7 @@ class DatabaseService(
         }
     }
 
-    fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String?>> {
+    fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
         var connection: Connection? = null
         val systemName = RandomStringUtils.random(40, true, true).lowercase(Locale.getDefault())
         return try {
@@ -72,19 +72,16 @@ class DatabaseService(
 
             val response = ResponseEntity(
                 mapOf(
-                    "url" to "${connection.metaData?.url}$systemName",
-                    "username" to user.username,
-                    "password" to user.password
-
+                    "status" to "Database ${request.database} successfully created"
                 ), HttpStatus.OK
             )
             connection!!.endRequest()
             connection.close()
-            return response
+            response
         } catch (ex: Exception) {
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
             connection?.createStatement()?.execute("drop database \"$systemName\"")
-            return ResponseEntity(
+            ResponseEntity(
                 mapOf(
                     "error" to "Database creation error: ${request.database}",
                 ), HttpStatus.BAD_REQUEST
@@ -166,6 +163,25 @@ class DatabaseService(
         }
     }
 
+    fun findDatabaseInDBMS(token: String, dbms: String): ResponseEntity<Any> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            ResponseEntity(
+                databaseRepository.findAllByUserEntityAndDbms(
+                    currentUser,
+                    dbms
+                ), HttpStatus.OK
+            )
+        } catch (ex: Exception) {
+            logger.error(ex.message)
+            ResponseEntity(
+                mapOf(
+                    "error" to ex.message.toString()
+                ), HttpStatus.BAD_REQUEST
+            )
+        }
+    }
+
     fun updateCredentials(request: ChangeCredentialsRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
             val instance = findDriver(request.dbms!!)
@@ -195,7 +211,7 @@ class DatabaseService(
                     .encodeToString(encryptCipher.doFinal(password.toByteArray(Charsets.UTF_8)))
             }
             databaseRepository.save(currentDatabase)
-            return ResponseEntity(mapOf("login" to login, "password" to password), HttpStatus.OK)
+            return ResponseEntity(null, HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error("Change user credentials error: ${request.database}. Exception: ${ex.message}")
             ResponseEntity(

@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import ru.dataquire.databasemanager.dto.Database
 import ru.dataquire.databasemanager.dto.DatabaseForList
+import ru.dataquire.databasemanager.dto.DatabaseInDBMS
 import ru.dataquire.databasemanager.entity.DatabaseEntity
 import ru.dataquire.databasemanager.entity.UserEntity
 import java.util.UUID
@@ -36,4 +37,6 @@ interface DatabaseRepository : JpaRepository<DatabaseEntity, UUID> {
 
     fun findAllByUserEntity(userEntity: UserEntity): List<DatabaseForList>
     fun findDatabaseEntityByUserEntityAndSystemName(userEntity: UserEntity, systemName: String): Database
+
+    fun findAllByUserEntityAndDbms(userEntity: UserEntity, dbms: String): List<DatabaseInDBMS>
 }
