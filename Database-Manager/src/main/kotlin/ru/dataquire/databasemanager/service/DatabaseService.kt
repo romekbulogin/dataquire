@@ -260,9 +260,9 @@ class DatabaseService(
             )
             val tables = mutableListOf<String>()
 
-            val rs = connection.metaData.getTables(connection.catalog, connection.schema, "%", null)
+            val rs = connection.metaData.getTables(null, null, "%", arrayOf("TABLE"))
             while (rs.next()) {
-                tables.add(rs.getString(3))
+                tables.add(rs.getString("TABLE_NAME"))
             }
             ResponseEntity(tables, HttpStatus.OK)
         } catch (ex: Exception) {
