@@ -51,7 +51,7 @@ class DatabaseController(
         return databaseService.findDatabase(token, systemName)
     }
 
-    @GetMapping("/{dbms}")
+    @GetMapping("/find/{dbms}")
     fun viewDatabaseInDBMS(
         @PathVariable(name = "dbms") dbms: String,
         @RequestHeader("Authorization") token: String
