@@ -14,6 +14,13 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   application:
     name: instance-keeper
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://185.124.64.2:8761/eureka"
+  instance:
+    ip-address: 85.193.90.72
+    prefer-ip-address: true
 logging:
   config: 'classpath:log4j2.yml'
 server:
