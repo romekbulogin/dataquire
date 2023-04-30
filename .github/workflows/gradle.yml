@@ -59,3 +59,8 @@ jobs:
         run: |
           docker tag instance-keeper ghcr.io/romekbulogin/instance-keeper:latest
           docker push ghcr.io/romekbulogin/instance-keeper:latest
+
+      - name: Push table-manager to GHCR
+        run: |
+          docker tag instance-keeper ghcr.io/romekbulogin/table-manager:latest
+          docker push ghcr.io/romekbulogin/table-manager:latest
