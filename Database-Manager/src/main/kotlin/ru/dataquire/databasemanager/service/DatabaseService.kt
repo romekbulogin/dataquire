@@ -142,11 +142,19 @@ class DatabaseService(
     fun findDatabase(token: String, systemName: String): ResponseEntity<Any> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase = databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
+                currentUser,
+                systemName
+            )
+            currentDatabase.apply {
+                passwordDbms = String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            }
             ResponseEntity(
-                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
-                    currentUser,
-                    systemName
-                ), HttpStatus.OK
+                currentDatabase, HttpStatus.OK
             )
         } catch (ex: Exception) {
             logger.error(ex.message)
