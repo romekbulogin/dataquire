@@ -61,6 +61,7 @@ class TableManagerService(
                     )
                 ).size
             )
+
             val connection =
                 DriverManager.getConnection(
                     "${targetDatabase?.url}${currentDatabase.systemName}",
