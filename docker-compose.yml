@@ -1,13 +1,6 @@
 version: '3'
 
 services:
-  #  udbms_users:
-  #    image: postgres:15
-  #    container_name: 'udbms_users'
-  #    environment:
-  #      - 'POSTGRES_USER=postgres'
-  #      - 'POSTGRES_HOST_AUTH_METHOD=trust'
-  #      - 'POSTGRES_DB=udbms_users'
   dataquire-eureka-server:
     build:
       dockerfile: ./Dataquire-Eureka-Server/Dockerfile
