@@ -72,6 +72,8 @@ class TableManagerService(
                 resultQuery.add(map)
                 map = mutableMapOf()
             }
+            resultSet.close()
+            connection.close()
             ResponseEntity(resultQuery, HttpStatus.OK)
         } catch (ex: SQLException) {
             logger.error(ex.message)
@@ -106,7 +108,8 @@ class TableManagerService(
             while (resultSet.next()) {
                 columns.add(mapOf("field" to resultSet.getString("COLUMN_NAME")))
             }
-
+            resultSet.close()
+            connection.close()
             ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
@@ -132,7 +135,7 @@ class TableManagerService(
                 )
             )
             logger.info { connection.schema }
-            var rs = connection.metaData.getCrossReference(
+            val rs = connection.metaData.getCrossReference(
                 connection.catalog,
                 connection.schema,
                 "cooltb",
@@ -148,6 +151,8 @@ class TableManagerService(
                     tables.add(rs.getString(i))
                 }
             }
+            rs.close()
+            connection.close()
             ResponseEntity(mapOf("response" to tables), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -246,11 +251,13 @@ class TableManagerService(
 
                 }
             }
+            connection.close()
             ResponseEntity(
                 mapOf(
                     "status" to "Таблица '${request.tableName}' успешно создана"
                 ), HttpStatus.OK
             )
+
         } catch (ex: Exception) {
             logger.error(ex.message)
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
