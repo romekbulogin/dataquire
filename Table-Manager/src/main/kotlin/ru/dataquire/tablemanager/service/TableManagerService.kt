@@ -52,6 +52,7 @@ class TableManagerService(
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
 
+            logger.info("SIZE OF BYTE ARRAY: " + Base64.getDecoder().decode(currentDatabase.passwordDbms).size)
             val connection =
                 DriverManager.getConnection(
                     "${targetDatabase?.url}${currentDatabase.systemName}",

@@ -264,6 +264,8 @@ class DatabaseService(
             while (rs.next()) {
                 tables.add(rs.getString("TABLE_NAME"))
             }
+            rs.close()
+            connection.close()
             ResponseEntity(tables, HttpStatus.OK)
         } catch (ex: Exception) {
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
