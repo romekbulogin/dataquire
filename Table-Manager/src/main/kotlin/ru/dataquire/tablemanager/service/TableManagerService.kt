@@ -84,6 +84,35 @@ class TableManagerService(
 
     }
 
+    fun getColumnsOfTable(token: String, systemName: String, table: String): ResponseEntity<Any> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
+            val instance = findDriver(currentDatabase.dbms.toString())
+            val connection = DriverManager.getConnection(
+                "${instance?.url}${currentDatabase.systemName}",
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            )
+            val columns = mutableListOf<Map<String, String>>()
+
+            val resultSet = connection.metaData.getColumns(null, null, table, null)
+
+            while (resultSet.next()) {
+                columns.add(mapOf("field" to resultSet.getString("COLUMN_NAME")))
+            }
+
+            ResponseEntity(columns, HttpStatus.OK)
+        } catch (ex: Exception) {
+            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
+        }
+    }
+
     fun getColumnForForeignKey(token: String, request: ViewTableRequest): ResponseEntity<Map<String, Any?>> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
