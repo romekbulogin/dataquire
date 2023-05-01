@@ -21,6 +21,7 @@ import ru.dataquire.tablemanager.repository.DatabaseRepository
 import ru.dataquire.tablemanager.repository.UserRepository
 import ru.dataquire.tablemanager.request.CreateTableRequest
 import ru.dataquire.tablemanager.request.ViewTableRequest
+import java.nio.charset.Charset
 import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
@@ -53,15 +54,21 @@ class TableManagerService(
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
 
-            logger.info("SIZE OF BYTE ARRAY: " + DatatypeConverter.parseBase64Binary(currentDatabase.passwordDbms).size)
+            logger.info(
+                "SIZE OF BYTE ARRAY: " + Base64.getDecoder().decode(
+                    currentDatabase.passwordDbms?.toByteArray(
+                        Charset.defaultCharset()
+                    )
+                ).size
+            )
             val connection =
                 DriverManager.getConnection(
                     "${targetDatabase?.url}${currentDatabase.systemName}",
                     currentDatabase.login,
                     String(
                         decryptCipher.doFinal(
-                            DatatypeConverter.parseBase64Binary(currentDatabase.passwordDbms)
-                            //Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                            Base64.getDecoder()
+                                .decode(currentDatabase.passwordDbms?.toByteArray(Charset.defaultCharset()))
                         )
                     )
                 )
