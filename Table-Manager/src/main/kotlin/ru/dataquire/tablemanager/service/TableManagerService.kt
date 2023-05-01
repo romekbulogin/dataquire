@@ -1,5 +1,6 @@
 package ru.dataquire.tablemanager.service
 
+import jakarta.xml.bind.DatatypeConverter
 import mu.KotlinLogging
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
@@ -52,14 +53,15 @@ class TableManagerService(
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
 
-            logger.info("SIZE OF BYTE ARRAY: " + Base64.getDecoder().decode(currentDatabase.passwordDbms).size)
+            logger.info("SIZE OF BYTE ARRAY: " + DatatypeConverter.parseBase64Binary(currentDatabase.passwordDbms).size)
             val connection =
                 DriverManager.getConnection(
                     "${targetDatabase?.url}${currentDatabase.systemName}",
                     currentDatabase.login,
                     String(
                         decryptCipher.doFinal(
-                            Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                            DatatypeConverter.parseBase64Binary(currentDatabase.passwordDbms)
+                            //Base64.getDecoder().decode(currentDatabase.passwordDbms)
                         )
                     )
                 )
