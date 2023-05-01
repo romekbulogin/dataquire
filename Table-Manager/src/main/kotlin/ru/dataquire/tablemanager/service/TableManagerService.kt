@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import ru.dataquire.tablemanager.dto.Column
 import ru.dataquire.tablemanager.enums.SQLDataTypeEnum
 import ru.dataquire.tablemanager.enums.SQLDefaultDateType
 import ru.dataquire.tablemanager.feign.InstanceKeeperClient
@@ -68,12 +69,15 @@ class TableManagerService(
                 )
             val resultSet = connection.createStatement().executeQuery("select * from ${request.table}")
 
-            val columns = mutableListOf<Map<String, String>>()
+            val columns = mutableListOf<Column>()
 
             val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
 
             while (resultSetColumns.next()) {
-                columns.add(mapOf("field" to resultSetColumns.getString("COLUMN_NAME")))
+                columns.add(Column().apply {
+                    field = resultSetColumns.getString("COLUMN_NAME")
+                    type = resultSetColumns.type.toString()
+                })
             }
 
             while (resultSet.next()) {
