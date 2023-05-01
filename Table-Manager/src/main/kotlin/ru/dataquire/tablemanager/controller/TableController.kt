@@ -31,13 +31,4 @@ class TableController(private val tableManagerService: TableManagerService) {
     @PostMapping("/keys")
     fun getKeysColumn(@RequestHeader("Authorization") token: String, @RequestBody request: ViewTableRequest) =
         tableManagerService.getColumnForForeignKey(token, request)
-
-    @GetMapping("/{dbms}/{systemName}/{table}/structure")
-    fun getColumnsOfTable(
-        @RequestHeader("Authorization") token: String, @PathVariable systemName: String,
-        @PathVariable dbms: String, @PathVariable table: String
-    ): ResponseEntity<Any> {
-        logger.info("Request for view table: $systemName $dbms $table")
-        return tableManagerService.getColumnsOfTable(token, systemName, table)
-    }
 }

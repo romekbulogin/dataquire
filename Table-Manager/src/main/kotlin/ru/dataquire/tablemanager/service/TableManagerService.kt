@@ -54,13 +54,6 @@ class TableManagerService(
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
 
-            logger.info(
-                "SIZE OF BYTE ARRAY: " + Base64.getDecoder().decode(
-                    currentDatabase.passwordDbms?.toByteArray(
-                        Charset.defaultCharset()
-                    )
-                ).size
-            )
 
             val connection =
                 DriverManager.getConnection(
@@ -69,12 +62,19 @@ class TableManagerService(
                     String(
                         decryptCipher.doFinal(
                             Base64.getDecoder()
-                                .decode(currentDatabase.passwordDbms?.toByteArray(Charset.defaultCharset()))
+                                .decode(currentDatabase.passwordDbms)
                         )
                     )
                 )
             val resultSet = connection.createStatement().executeQuery("select * from ${request.table}")
 
+            val columns = mutableListOf<Map<String, String>>()
+
+            val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
+
+            while (resultSetColumns.next()) {
+                columns.add(mapOf("field" to resultSetColumns.getString("COLUMN_NAME")))
+            }
 
             while (resultSet.next()) {
                 for (i in 1..resultSet.metaData.columnCount) {
@@ -85,7 +85,7 @@ class TableManagerService(
             }
             resultSet.close()
             connection.close()
-            ResponseEntity(resultQuery, HttpStatus.OK)
+            ResponseEntity(mapOf("columns" to columns, "rows" to resultQuery), HttpStatus.OK)
         } catch (ex: SQLException) {
             logger.error(ex.message)
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
@@ -95,36 +95,6 @@ class TableManagerService(
     //TODO: реализовать метод для обновления данных в какой-либо таблице
     fun updateRawInTable() {
 
-    }
-
-    fun getColumnsOfTable(token: String, systemName: String, table: String): ResponseEntity<Any> {
-        return try {
-            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-            val currentDatabase =
-                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
-            val instance = findDriver(currentDatabase.dbms.toString())
-            val connection = DriverManager.getConnection(
-                "${instance?.url}${currentDatabase.systemName}",
-                currentDatabase.login,
-                String(
-                    decryptCipher.doFinal(
-                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
-                    )
-                )
-            )
-            val columns = mutableListOf<Map<String, String>>()
-
-            val resultSet = connection.metaData.getColumns(null, null, table, null)
-
-            while (resultSet.next()) {
-                columns.add(mapOf("field" to resultSet.getString("COLUMN_NAME")))
-            }
-            resultSet.close()
-            connection.close()
-            ResponseEntity(columns, HttpStatus.OK)
-        } catch (ex: Exception) {
-            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
-        }
     }
 
     fun getColumnForForeignKey(token: String, request: ViewTableRequest): ResponseEntity<Map<String, Any?>> {
