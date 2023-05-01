@@ -76,7 +76,7 @@ class TableManagerService(
             while (resultSetColumns.next()) {
                 columns.add(Column().apply {
                     field = resultSetColumns.getString("COLUMN_NAME")
-                    type = resultSetColumns.getString("TYPE_NAME").lowercase()
+                    type = resultSetColumns.getString("TYPE_NAME")
                 })
             }
 
