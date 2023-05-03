@@ -21,5 +21,8 @@ eureka:
   client:
     service-url:
       defaultZone: "http://185.124.64.2:8761/eureka"
+  instance:
+    ip-address: 90.156.225.215
+    prefer-ip-address: true
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
