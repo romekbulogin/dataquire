@@ -64,7 +64,8 @@ class QueryConsumer(
                 )
             }
             logger.debug("Current connection: ${dataSource?.url}")
-            val resultSet = driverManagerDataSources.connection.createStatement()?.executeQuery(request.sql)
+            val connection = driverManagerDataSources.connection
+            val resultSet = connection.createStatement()?.executeQuery(request.sql)
 
             val result = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
@@ -76,7 +77,8 @@ class QueryConsumer(
                 result.add(map)
                 map = mutableMapOf()
             }
-            driverManagerDataSources.connection.close()
+            resultSet?.close()
+            connection.close()
             return result
         } catch (ex: SQLException) {
             logger.error(ex.message)
@@ -87,8 +89,9 @@ class QueryConsumer(
     private fun getUserCredentials(username: String, database: String): UserCredentials? {
         return try {
             val userCredentials = UserCredentials()
+            val connection = mainDatabaseInstance.connection
             val statement =
-                mainDatabaseInstance.connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
+                connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
             statement.setString(1, username)
             statement.setString(2, database)
             val resultSet = statement.executeQuery()
@@ -100,6 +103,8 @@ class QueryConsumer(
                     }
                 }
             }
+            resultSet.close()
+            connection.close()
             userCredentials
         } catch (ex: Exception) {
             logger.error(ex.message)
