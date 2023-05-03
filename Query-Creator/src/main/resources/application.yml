@@ -14,6 +14,7 @@ spring:
     ports:
       - "5672:5672"
       - "15672:15672"
+    addresses: 90.156.225.215
   application:
     name: query-executor
 eureka:
