@@ -27,6 +27,11 @@ class GatewayConfiguration(private val authenticationFilter: AuthenticationFilte
                     .filters { f -> f.filter(authenticationFilter) }
                     .uri("lb://table-manager")
             }
+            .route("query-creator") { r ->
+                r.path("/api/query_executor/**")
+                    .filters { f -> f.filter(authenticationFilter) }
+                    .uri("lb://query-creator")
+            }
             .build()
     }
 

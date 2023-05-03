@@ -16,7 +16,7 @@ spring:
       - "15672:15672"
     addresses: 90.156.225.215
   application:
-    name: query-executor
+    name: query-creator
 eureka:
   client:
     service-url:
