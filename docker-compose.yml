@@ -45,22 +45,22 @@ services:
     container_name: 'database-manager'
     ports:
       - "8085:8085"
-#  query-creator:
-#    build:
-#      dockerfile: ./Query-Creator/Dockerfile
-#      context: .
-#    image: query-creator
-#    container_name: 'query-creator'
-#    ports:
-#      - "8091:8091"
-#  query-executor:
-#    build:
-#      dockerfile: ./Query-Executor/Dockerfile
-#      context: .
-#    image: query-executor
-#    container_name: 'query-executor'
-#    ports:
-#      - "8086:8086"
+  query-creator:
+    build:
+      dockerfile: ./Query-Creator/Dockerfile
+      context: .
+    image: query-creator
+    container_name: 'query-creator'
+    ports:
+      - "8091:8091"
+  query-executor:
+    build:
+      dockerfile: ./Query-Executor/Dockerfile
+      context: .
+    image: query-executor
+    container_name: 'query-executor'
+    ports:
+      - "8086:8086"
   table-manager:
     build:
       dockerfile: ./Table-Manager/Dockerfile

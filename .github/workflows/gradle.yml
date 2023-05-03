@@ -60,7 +60,12 @@ jobs:
           docker tag instance-keeper ghcr.io/romekbulogin/instance-keeper:latest
           docker push ghcr.io/romekbulogin/instance-keeper:latest
 
-      - name: Push table-manager to GHCR
+      - name: Push query-creator to GHCR
         run: |
-          docker tag table-manager ghcr.io/romekbulogin/table-manager:latest
-          docker push ghcr.io/romekbulogin/table-manager:latest
+          docker tag query-creator ghcr.io/romekbulogin/query-creator:latest
+          docker push ghcr.io/romekbulogin/query-creator:latest
+
+      - name: Push query-executor to GHCR
+        run: |
+          docker tag query-executor ghcr.io/romekbulogin/query-executor:latest
+          docker push ghcr.io/romekbulogin/query-executor:latest

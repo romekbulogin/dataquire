@@ -4,7 +4,6 @@ import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.stereotype.Service
 import ru.dataquire.databasemanager.dto.UserCredentials
 import ru.dataquire.databasemanager.entity.DatabaseEntity
@@ -33,12 +32,70 @@ class DatabaseService(
     private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
-    fun findDriver(driverName: String): InstanceEntity? {
+
+    private val createUserQuery = "CREATE USER usertag WITH PASSWORD 'passtag';"
+    private fun findDriver(driverName: String): InstanceEntity? {
         return try {
             instanceKeeperClient.findInstanceByDbms(FindInstance(driverName))
         } catch (ex: Exception) {
             logger.error(ex.message)
             throw RuntimeException("DBMS url not found")
+        }
+    }
+
+    private fun convertCreateUserQuery(dbms: String): String {
+        return when (dbms) {
+            "PostgreSQL" -> createUserQuery
+            "MySQL", "Oracle" -> {
+                createUserQuery.replace("WITH PASSWORD", "IDENTIFIED BY")
+                    .replace("'", "\"")
+            }
+
+            "MSSQL" -> {
+                createUserQuery.replace("CREATE USER", "CREATE LOGIN")
+                    .replace("WITH PASSWORD", "WITH PASSWORD =")
+            }
+
+            else -> {
+                throw Exception("$dbms is not found")
+            }
+        }
+    }
+
+    private fun convertUpdateUsernameQuery(dbms: String): String {
+        return when (dbms) {
+            "PostgreSQL" -> "ALTER USER oldusername RENAME TO newusername;"
+            "MySQL" -> "RENAME USER oldusername TO newusername;"
+            "Oracle" -> "ALTER USER oldusername RENAME TO newusername;"
+            "MSSQL" -> "ALTER LOGIN oldusername WITH NAME = newusername;"
+            else -> {
+                throw Exception("$dbms is not found")
+            }
+        }
+    }
+
+    private fun convertUpdatePasswordQuery(dbms: String): String {
+        return when (dbms) {
+            "PostgreSQL" -> "ALTER USER usertag WITH PASSWORD 'passtag';"
+            "MySQL" -> "ALTER USER 'usertag'@'localhost' IDENTIFIED BY 'passtag';";
+            "Oracle" -> "ALTER USER usertag IDENTIFIED BY passtag;"
+            "MSSQL" -> "ALTER LOGIN usertag WITH PASSWORD = 'passtag';"
+            else -> {
+                throw Exception("$dbms is not found")
+            }
+        }
+    }
+
+
+    private fun convertDeleteUserQuery(dbms: String): String {
+        return when (dbms) {
+            "PostgreSQL" -> "DROP USER usertag;"
+            "MySQL" -> "DROP USER usertag@'localhost';";
+            "Oracle" -> "DROP USER usertag;"
+            "MSSQL" -> "DROP LOGIN usertag;"
+            else -> {
+                throw Exception("$dbms is not found")
+            }
         }
     }
 
@@ -102,9 +159,16 @@ class DatabaseService(
                     request.systemName.toString()
                 )
             connection?.createStatement()?.execute("drop database \"${currentDatabase.systemName}\"")
+            connection?.createStatement()?.execute(
+                convertDeleteUserQuery(database?.dbms!!).replace(
+                    "usertag",
+                    currentDatabase.login!!
+                )
+            )
             currentUser.deleteDatabase(currentDatabase)
             databaseRepository.delete(currentDatabase)
             logger.info("Database: ${request.database} deleted successfully")
+
             connection?.close()
             ResponseEntity(
                 mapOf("response" to "Database: ${request.database} deleted successfully"),
@@ -197,12 +261,12 @@ class DatabaseService(
             val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
             val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
             connection.createStatement().execute(
-                instance?.sqlUpdateUsername?.replace("oldusername", currentDatabase.login!!)
-                    ?.replace("newusername", login)
+                convertUpdateUsernameQuery(instance?.dbms!!).replace("oldusername", currentDatabase.login!!)
+                    .replace("newusername", login)
             )
             connection.createStatement().execute(
-                instance?.sqlUpdatePassword?.replace("usertag", login)
-                    ?.replace("passtag", password)
+                convertUpdatePasswordQuery(instance.dbms!!).replace("usertag", login)
+                    .replace("passtag", password)
             )
             connection.close()
             with(currentDatabase) {
@@ -232,8 +296,8 @@ class DatabaseService(
             val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
 
             connection.createStatement().execute(
-                instance.sqlCreateUser?.replace("usertag", login)
-                    ?.replace("passtag", password)
+                convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
+                    .replace("passtag", password)
             )
             connection.close()
             UserCredentials(login, password)
