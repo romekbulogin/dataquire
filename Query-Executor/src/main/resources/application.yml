@@ -50,8 +50,8 @@ spring:
         queue-response: query-executor-queue-response
         routing-key-response: query-executor-routing-key-response
 
-    username: guest
-    password: guest
+    username: admin
+    password: admin
     ports:
       - "5672:5672"
       - "15672:15672"
