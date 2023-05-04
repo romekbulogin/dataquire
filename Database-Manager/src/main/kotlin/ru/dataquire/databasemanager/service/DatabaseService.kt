@@ -146,7 +146,6 @@ class DatabaseService(
         }
     }
 
-    //добавить удаление юзера БД
     fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
             val database = findDriver(request.dbms.toString())
@@ -213,6 +212,7 @@ class DatabaseService(
                         Base64.getDecoder().decode(currentDatabase.passwordDbms)
                     )
                 )
+                url = findDriver(currentDatabase.dbms!!)?.url
             }
             ResponseEntity(
                 currentDatabase, HttpStatus.OK

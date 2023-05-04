@@ -3,7 +3,9 @@ package ru.dataquire.tablemanager.service
 import jakarta.xml.bind.DatatypeConverter
 import mu.KotlinLogging
 import org.jooq.DSLContext
+import org.jooq.Field
 import org.jooq.SQLDialect
+import org.jooq.TableElement
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.constraint
 import org.jooq.impl.DSL.currentDate
@@ -145,8 +147,112 @@ class TableManagerService(
         }
     }
 
-    fun createTable(token: String, request: CreateTableRequest): ResponseEntity<Map<String, String?>> {
-        return try {
+//    fun createTable(token: String, request: CreateTableRequest): ResponseEntity<Map<String, String?>> {
+//        return try {
+//            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+//            val currentDatabase =
+//                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
+//                    currentUser,
+//                    request.tableSystemInfo?.systemName!!
+//                )
+//            val targetDatabase = findDriver(currentDatabase.dbms!!)
+//            val connection = DriverManager.getConnection(
+//                "${targetDatabase?.url}${request.tableSystemInfo?.systemName}",
+//                currentDatabase.login,
+//                String(
+//                    decryptCipher.doFinal(
+//                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+//                    )
+//                )
+//            )
+//
+//            val dslContext = if (currentDatabase.dbms!! == "PostgreSQL")
+//                DSL.using(connection, SQLDialect.POSTGRES)
+//            else
+//                DSL.using(connection, SQLDialect.valueOf(currentDatabase.dbms!!))
+//
+//
+//            logger.debug { request }
+//            val createTable = dslContext.createTable(request.tableName)
+//            request.primaryKey?.name = "${request.tableName}_constraint_pk"
+//
+//            //create primary key
+//            if (request.primaryKey != null) {
+//                createTable.column(
+//                    request.primaryKey?.columnName,
+//                    SQLDataTypeEnum.getSqlDataType(request.primaryKey?.dataType!!)
+//                        ?.identity(request.primaryKey?.isIdentity!!)
+//                        ?.length(request.primaryKey?.length!!)
+//                ).constraints(
+//                    constraint(request.primaryKey?.name).primaryKey(request.primaryKey?.columnName)
+//                )
+//            }
+//
+//
+//            //create simple columns
+//            request.columns.forEach {
+//                createTable.column(
+//                    it.name,
+//                    SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.sqlDataType?.nullable(it.isNull!!)?.length(it.length)
+//                        ?.identity(it.isIdentity!!)
+//                )
+//            }
+//
+//            //create unique value
+//            if (!request.uniqueAttributes.isNullOrEmpty()) {
+//                request.uniqueAttributes.forEach {
+//                    createTable.unique(it)
+//                }
+//            }
+//
+//            //TODO: реализовать поиск подходящих атрибутов для ссылки на внешний ключ (делается через Metadata в JDBC)
+//            //create foreign keys
+//            if (!request.foreignKeys.isNullOrEmpty()) {
+//                request.foreignKeys?.forEach {
+//                    createTable.column(
+//                        it.columnName,
+//                        SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.identity(it.isIdentity!!)
+//                            ?.length(it.length)?.identity(it.isIdentity!!)
+//                    ).constraints(
+//                        constraint(it.name).foreignKey(it.columnName)
+//                            .references(it.referenceTableName, it.referenceColumnName)
+//                    )
+//                }
+//            }
+//
+//            //execute query
+//            createTable.execute()
+//
+//            //set default value
+//            if (!request.defaultValues.isNullOrEmpty()) {
+//                request.defaultValues.forEach { defaultValue ->
+//                    val currentColumn = request.columns.filter {
+//                        it.name == defaultValue.key
+//                    }[0]
+//                    if (SQLDataTypeEnum.getSqlDateType().contains(currentColumn.dataType))
+//                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
+//                            .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(defaultValue.value)).execute()
+//                    else
+//                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
+//                            .defaultValue(defaultValue.value).execute()
+//
+//                }
+//            }
+//            connection.close()
+//            ResponseEntity(
+//                mapOf(
+//                    "status" to "Таблица '${request.tableName}' успешно создана"
+//                ), HttpStatus.OK
+//            )
+//
+//        } catch (ex: Exception) {
+//            logger.error(ex.message)
+//            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
+//        }
+//    }
+
+    fun createTable(token: String, request: CreateTableRequest) {
+        try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
@@ -169,83 +275,36 @@ class TableManagerService(
             else
                 DSL.using(connection, SQLDialect.valueOf(currentDatabase.dbms!!))
 
+            val table = dslContext.createTable(request.tableName)
 
-            logger.debug { request }
-            val createTable = dslContext.createTable(request.tableName)
-            request.primaryKey?.name = "${request.tableName}_constraint_pk"
-
-            //create primary key
-            if (request.primaryKey != null) {
-                createTable.column(
-                    request.primaryKey?.columnName,
-                    SQLDataTypeEnum.getSqlDataType(request.primaryKey?.dataType!!)
-                        ?.identity(request.primaryKey?.isIdentity!!)
-                        ?.length(request.primaryKey?.length!!)
-                ).constraints(
-                    constraint(request.primaryKey?.name).primaryKey(request.primaryKey?.columnName)
-                )
-            }
+            val fields = mutableListOf<Field<out Any>>()
+            val primaryKeyFields = mutableListOf<Field<out Any>>()
 
 
-            //create simple columns
-            request.columns.forEach {
-                createTable.column(
-                    it.name,
-                    SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.sqlDataType?.nullable(it.isNull!!)?.length(it.length)
-                        ?.identity(it.isIdentity!!)
-                )
-            }
-
-            //create unique value
-            if (!request.uniqueAttributes.isNullOrEmpty()) {
-                request.uniqueAttributes.forEach {
-                    createTable.unique(it)
-                }
-            }
-
-            //TODO: реализовать поиск подходящих атрибутов для ссылки на внешний ключ (делается через Metadata в JDBC)
-            //create foreign keys
-            if (!request.foreignKeys.isNullOrEmpty()) {
-                request.foreignKeys?.forEach {
-                    createTable.column(
-                        it.columnName,
-                        SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.identity(it.isIdentity!!)
-                            ?.length(it.length)?.identity(it.isIdentity!!)
-                    ).constraints(
-                        constraint(it.name).foreignKey(it.columnName)
-                            .references(it.referenceTableName, it.referenceColumnName)
+            request.columns.forEach { column ->
+                fields.add(
+                    DSL.field(
+                        column.name,
+                        SQLDataTypeEnum.getSqlDataType(column.dataType!!)?.nullable(column.isNull)
+                            ?.length(column.length)?.identity(column.isIdentity)
                     )
-                }
+                )
             }
 
-            //execute query
-            createTable.execute()
 
-            //set default value
-            if (!request.defaultValues.isNullOrEmpty()) {
-                request.defaultValues.forEach { defaultValue ->
-                    val currentColumn = request.columns.filter {
-                        it.name == defaultValue.key
-                    }[0]
-                    if (SQLDataTypeEnum.getSqlDateType().contains(currentColumn.dataType))
-                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
-                            .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(defaultValue.value)).execute()
-                    else
-                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
-                            .defaultValue(defaultValue.value).execute()
+            var a = primaryKeyFields.add(fields.filter {
+                it.name == "id"
+            }.first())
 
-                }
+            request.columns.filter { column ->
+                if (column.isPrimaryKey)
             }
-            connection.close()
-            ResponseEntity(
-                mapOf(
-                    "status" to "Таблица '${request.tableName}' успешно создана"
-                ), HttpStatus.OK
-            )
+
+
+            table.tableElements(fields)
 
         } catch (ex: Exception) {
             logger.error(ex.message)
-            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
         }
     }
 
