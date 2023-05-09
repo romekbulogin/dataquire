@@ -212,7 +212,6 @@ class DatabaseService(
                         Base64.getDecoder().decode(currentDatabase.passwordDbms)
                     )
                 )
-                url = findDriver(currentDatabase.dbms!!)?.url
             }
             ResponseEntity(
                 currentDatabase, HttpStatus.OK

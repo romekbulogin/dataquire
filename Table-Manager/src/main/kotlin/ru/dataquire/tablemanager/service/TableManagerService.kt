@@ -275,11 +275,9 @@ class TableManagerService(
             else
                 DSL.using(connection, SQLDialect.valueOf(currentDatabase.dbms!!))
 
-            val table = dslContext.createTable(request.tableName)
-
             val fields = mutableListOf<Field<out Any>>()
-            val primaryKeyFields = mutableListOf<Field<out Any>>()
 
+            val table = dslContext.createTable(request.tableName)
 
             request.columns.forEach { column ->
                 fields.add(
@@ -292,17 +290,32 @@ class TableManagerService(
             }
 
 
-            var a = primaryKeyFields.add(fields.filter {
-                it.name == "id"
-            }.first())
-
-            request.columns.filter { column ->
-                if (column.isPrimaryKey)
-            }
-
-
             table.tableElements(fields)
 
+            for (i in fields.indices) {
+                if (request.columns[i].isPrimaryKey)
+                    table.primaryKey(fields[i])
+                if (request.columns[i].isUnique)
+                    table.unique(fields[i])
+            }
+
+            table.execute()
+
+            for (i in fields.indices) {
+                if (request.columns[i].defaultValue != null) {
+                    dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
+                        .defaultValue(request.columns[i].defaultValue)
+                }
+                if (request.columns[i].defaultValue != null || SQLDefaultDateType.getSqlDefaultDateTypes()
+                        .contains(request.columns[i].dataType)
+                ) {
+                    dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
+                        .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(request.columns[i].dataType!!))
+                }
+            }
+
+            logger.info(table.sql)
+            println()
         } catch (ex: Exception) {
             logger.error(ex.message)
         }
