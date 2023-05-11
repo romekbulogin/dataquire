@@ -28,6 +28,7 @@ dependencies {
     //Database Driver
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.postgresql:postgresql")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:11.2.3.jre18")
     //Jackson
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.14.2")

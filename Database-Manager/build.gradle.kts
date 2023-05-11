@@ -28,8 +28,9 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     //Database Driver
-    runtimeOnly("com.mysql:mysql-connector-j")
+    implementation("mysql:mysql-connector-java:8.0.33")
     runtimeOnly("org.postgresql:postgresql")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11")
     //Jackson
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.14.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.14.2")

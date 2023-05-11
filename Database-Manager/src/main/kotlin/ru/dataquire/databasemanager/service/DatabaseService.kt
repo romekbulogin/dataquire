@@ -81,7 +81,7 @@ class DatabaseService(
     private fun convertUpdatePasswordQuery(dbms: String): String {
         return when (dbms) {
             "PostgreSQL" -> "ALTER USER usertag WITH PASSWORD 'passtag';"
-            "MySQL" -> "ALTER USER 'usertag'@'localhost' IDENTIFIED BY 'passtag';";
+            "MySQL" -> "ALTER USER 'usertag'@'%' IDENTIFIED BY 'passtag';";
             "Oracle" -> "ALTER USER usertag IDENTIFIED BY passtag;"
             "MSSQL" -> "ALTER LOGIN usertag WITH PASSWORD = 'passtag';"
             else -> {
@@ -94,7 +94,7 @@ class DatabaseService(
     private fun convertDeleteUserQuery(dbms: String): String {
         return when (dbms) {
             "PostgreSQL" -> "DROP USER usertag;"
-            "MySQL" -> "DROP USER usertag@'localhost';";
+            "MySQL" -> "DROP USER 'usertag'@'%';";
             "Oracle" -> "DROP USER usertag;"
             "MSSQL" -> "DROP LOGIN usertag;"
             else -> {
@@ -104,20 +104,20 @@ class DatabaseService(
     }
 
     fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
-        var connection: Connection? = null
         val systemName =
             RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault()) + RandomStringUtils.random(
                 30,
                 true,
                 true
             ).lowercase(Locale.getDefault())
+        val targetDatabase = findDriver(request.dbms!!)
+        val user = createUser(targetDatabase!!)
         return try {
-            val targetDatabase = findDriver(request.dbms!!)
-            val user = createUser(targetDatabase!!)
-            connection =
+            val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection?.createStatement()
-                ?.executeUpdate("create database $systemName; ALTER DATABASE $systemName OWNER TO ${user.username};")
+            val dslContext = DSL.using(connection)
+            dslContext.createDatabase(systemName)
+            dslContext.grant(DSL.privilege("ALL")).on(systemName).to(DSL.user(user.username))
 
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val database = DatabaseEntity().apply {
@@ -146,7 +146,12 @@ class DatabaseService(
             response
         } catch (ex: Exception) {
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
+            val connection =
+                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
             connection?.createStatement()?.execute("drop database $systemName")
+            connection?.createStatement()
+                ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
+            connection.close()
             ResponseEntity(
                 mapOf(
                     "error" to "Database creation error: ${request.database}",
@@ -308,8 +313,8 @@ class DatabaseService(
         return try {
             val connection = DriverManager.getConnection(instance.url, instance.username, instance.password)
 
-            val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
-            val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
+            val password = RandomStringUtils.random(30, true, true)
+            val login = RandomStringUtils.random(10, true, false)
 
             connection.createStatement().execute(
                 convertCreateUserQuery(instance.dbms!!).replace("usertag", login)

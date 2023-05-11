@@ -41,7 +41,7 @@ dependencies {
     //Feign
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign:4.0.2")
     //JDBC Drivers
-    runtimeOnly("com.microsoft.sqlserver:mssql-jdbc")
+    implementation("com.microsoft.sqlserver:mssql-jdbc:11.2.3.jre18")
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("com.oracle.database.jdbc:ojdbc8")
     runtimeOnly("org.postgresql:postgresql")
