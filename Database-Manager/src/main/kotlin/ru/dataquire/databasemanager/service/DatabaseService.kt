@@ -2,6 +2,7 @@ package ru.dataquire.databasemanager.service
 
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
+import org.jooq.impl.DSL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -108,7 +109,7 @@ class DatabaseService(
             connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
             connection?.createStatement()
-                ?.executeUpdate("create database \"$systemName\"; ALTER DATABASE \"$systemName\" OWNER TO ${user.username};")
+                ?.executeUpdate("create database $systemName; ALTER DATABASE $systemName OWNER TO ${user.username};")
 
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val database = DatabaseEntity().apply {
@@ -137,7 +138,7 @@ class DatabaseService(
             response
         } catch (ex: Exception) {
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
-            connection?.createStatement()?.execute("drop database \"$systemName\"")
+            connection?.createStatement()?.execute("drop database $systemName")
             ResponseEntity(
                 mapOf(
                     "error" to "Database creation error: ${request.database}",
@@ -157,7 +158,7 @@ class DatabaseService(
                     request.dbms.toString(),
                     request.systemName.toString()
                 )
-            connection?.createStatement()?.execute("drop database \"${currentDatabase.systemName}\"")
+            connection?.createStatement()?.execute("drop database ${currentDatabase.systemName}")
             connection?.createStatement()?.execute(
                 convertDeleteUserQuery(database?.dbms!!).replace(
                     "usertag",
