@@ -102,7 +102,7 @@ class DatabaseService(
 
     fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
         var connection: Connection? = null
-        val systemName = RandomStringUtils.random(40, true, true).lowercase(Locale.getDefault())
+        val systemName = RandomStringUtils.random(40, true, false).lowercase(Locale.getDefault())
         return try {
             val targetDatabase = findDriver(request.dbms!!)
             val user = createUser(targetDatabase!!)
