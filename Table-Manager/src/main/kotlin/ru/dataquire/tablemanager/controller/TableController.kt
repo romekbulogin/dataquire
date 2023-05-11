@@ -31,4 +31,12 @@ class TableController(private val tableManagerService: TableManagerService) {
     @PostMapping("/keys")
     fun getKeysColumn(@RequestHeader("Authorization") token: String, @RequestBody request: ViewTableRequest) =
         tableManagerService.getColumnForForeignKey(token, request)
+
+    @PostMapping("/drop/{systemName}/{tableName}")
+    fun dropTable(
+        @RequestHeader("Authorization") token: String,
+        @PathVariable tableName: String,
+        @PathVariable systemName: String
+    ) =
+        tableManagerService.dropTable(token, tableName, systemName)
 }

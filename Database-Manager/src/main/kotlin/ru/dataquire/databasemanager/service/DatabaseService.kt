@@ -1,5 +1,7 @@
 package ru.dataquire.databasemanager.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
 import org.jooq.impl.DSL
@@ -21,6 +23,7 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
+import kotlin.reflect.full.memberProperties
 
 
 @Service
@@ -207,11 +210,13 @@ class DatabaseService(
 
     fun findDatabase(token: String, systemName: String): ResponseEntity<Any> {
         return try {
+
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase = databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
                 currentUser,
                 systemName
             )
+            val instance = findDriver(currentDatabase.dbms!!)
             currentDatabase.apply {
                 passwordDbms = String(
                     decryptCipher.doFinal(
@@ -219,8 +224,9 @@ class DatabaseService(
                     )
                 )
             }
+
             ResponseEntity(
-                currentDatabase, HttpStatus.OK
+                currentDatabase.asMap().plus(mapOf("url" to instance?.url)), HttpStatus.OK
             )
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -230,6 +236,11 @@ class DatabaseService(
                 ), HttpStatus.BAD_REQUEST
             )
         }
+    }
+
+    private inline fun <reified T : Any> T.asMap(): Map<String, Any?> {
+        val props = T::class.memberProperties.associateBy { it.name }
+        return props.keys.associateWith { props[it]?.get(this) }
     }
 
     fun findDatabaseInDBMS(token: String, dbms: String): ResponseEntity<Any> {

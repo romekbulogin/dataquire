@@ -12,5 +12,7 @@ data class Column(
     var isIdentity: Boolean = false,
     var isPrimaryKey: Boolean = false,
     var isForeignKey: Boolean = false,
+    var targetTable: String? = null,
+    var targetColumn: String? = null,
     var defaultValue: Any? = null
 )

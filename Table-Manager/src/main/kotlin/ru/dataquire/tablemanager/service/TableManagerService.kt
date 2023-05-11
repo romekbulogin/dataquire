@@ -1,17 +1,11 @@
 package ru.dataquire.tablemanager.service
 
-import jakarta.xml.bind.DatatypeConverter
 import mu.KotlinLogging
-import org.jooq.DSLContext
 import org.jooq.Field
 import org.jooq.SQLDialect
-import org.jooq.TableElement
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.constraint
-import org.jooq.impl.DSL.currentDate
-import org.jooq.impl.DateAsTimestampBinding
 import org.springframework.http.HttpStatus
-import org.springframework.http.HttpStatusCode
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import ru.dataquire.tablemanager.dto.Column
@@ -24,11 +18,12 @@ import ru.dataquire.tablemanager.repository.DatabaseRepository
 import ru.dataquire.tablemanager.repository.UserRepository
 import ru.dataquire.tablemanager.request.CreateTableRequest
 import ru.dataquire.tablemanager.request.ViewTableRequest
-import java.nio.charset.Charset
 import java.sql.DriverManager
+import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
+
 
 @Service
 class TableManagerService(
@@ -103,7 +98,7 @@ class TableManagerService(
 
     }
 
-    fun getColumnForForeignKey(token: String, request: ViewTableRequest): ResponseEntity<Map<String, Any?>> {
+    fun getColumnForForeignKey(token: String, request: ViewTableRequest): ResponseEntity<Any> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
@@ -121,138 +116,52 @@ class TableManagerService(
                     )
                 )
             )
-            logger.info { connection.schema }
-            val rs = connection.metaData.getCrossReference(
-                connection.catalog,
-                connection.schema,
-                "cooltb",
-                null,
-                connection.schema,
-                "cooltb2"
-            )
-            val metaDataRs = rs.metaData
-            val tables = mutableListOf<String>()
+            val columns = mutableListOf<String>()
 
-            while (rs.next()) {
-                for (i in 1 until metaDataRs.columnCount) {
-                    tables.add(rs.getString(i))
-                }
+            val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
+
+            while (resultSetColumns.next()) {
+                columns.add(resultSetColumns.getString("COLUMN_NAME"))
             }
-            rs.close()
+
+            resultSetColumns.close()
             connection.close()
-            ResponseEntity(mapOf("response" to tables), HttpStatus.OK)
+            ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
         }
     }
 
-//    fun createTable(token: String, request: CreateTableRequest): ResponseEntity<Map<String, String?>> {
-//        return try {
-//            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-//            val currentDatabase =
-//                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
-//                    currentUser,
-//                    request.tableSystemInfo?.systemName!!
-//                )
-//            val targetDatabase = findDriver(currentDatabase.dbms!!)
-//            val connection = DriverManager.getConnection(
-//                "${targetDatabase?.url}${request.tableSystemInfo?.systemName}",
-//                currentDatabase.login,
-//                String(
-//                    decryptCipher.doFinal(
-//                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
-//                    )
-//                )
-//            )
-//
-//            val dslContext = if (currentDatabase.dbms!! == "PostgreSQL")
-//                DSL.using(connection, SQLDialect.POSTGRES)
-//            else
-//                DSL.using(connection, SQLDialect.valueOf(currentDatabase.dbms!!))
-//
-//
-//            logger.debug { request }
-//            val createTable = dslContext.createTable(request.tableName)
-//            request.primaryKey?.name = "${request.tableName}_constraint_pk"
-//
-//            //create primary key
-//            if (request.primaryKey != null) {
-//                createTable.column(
-//                    request.primaryKey?.columnName,
-//                    SQLDataTypeEnum.getSqlDataType(request.primaryKey?.dataType!!)
-//                        ?.identity(request.primaryKey?.isIdentity!!)
-//                        ?.length(request.primaryKey?.length!!)
-//                ).constraints(
-//                    constraint(request.primaryKey?.name).primaryKey(request.primaryKey?.columnName)
-//                )
-//            }
-//
-//
-//            //create simple columns
-//            request.columns.forEach {
-//                createTable.column(
-//                    it.name,
-//                    SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.sqlDataType?.nullable(it.isNull!!)?.length(it.length)
-//                        ?.identity(it.isIdentity!!)
-//                )
-//            }
-//
-//            //create unique value
-//            if (!request.uniqueAttributes.isNullOrEmpty()) {
-//                request.uniqueAttributes.forEach {
-//                    createTable.unique(it)
-//                }
-//            }
-//
-//            //TODO: реализовать поиск подходящих атрибутов для ссылки на внешний ключ (делается через Metadata в JDBC)
-//            //create foreign keys
-//            if (!request.foreignKeys.isNullOrEmpty()) {
-//                request.foreignKeys?.forEach {
-//                    createTable.column(
-//                        it.columnName,
-//                        SQLDataTypeEnum.getSqlDataType(it.dataType!!)?.identity(it.isIdentity!!)
-//                            ?.length(it.length)?.identity(it.isIdentity!!)
-//                    ).constraints(
-//                        constraint(it.name).foreignKey(it.columnName)
-//                            .references(it.referenceTableName, it.referenceColumnName)
-//                    )
-//                }
-//            }
-//
-//            //execute query
-//            createTable.execute()
-//
-//            //set default value
-//            if (!request.defaultValues.isNullOrEmpty()) {
-//                request.defaultValues.forEach { defaultValue ->
-//                    val currentColumn = request.columns.filter {
-//                        it.name == defaultValue.key
-//                    }[0]
-//                    if (SQLDataTypeEnum.getSqlDateType().contains(currentColumn.dataType))
-//                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
-//                            .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(defaultValue.value)).execute()
-//                    else
-//                        dslContext.alterTable(request.tableName).alterColumn(defaultValue.key)
-//                            .defaultValue(defaultValue.value).execute()
-//
-//                }
-//            }
-//            connection.close()
-//            ResponseEntity(
-//                mapOf(
-//                    "status" to "Таблица '${request.tableName}' успешно создана"
-//                ), HttpStatus.OK
-//            )
-//
-//        } catch (ex: Exception) {
-//            logger.error(ex.message)
-//            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
-//        }
-//    }
+    fun dropTable(token: String, systemName: String, tableName: String): ResponseEntity<Map<String, String?>> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
+                    currentUser,
+                    systemName
+                )
+            val targetDatabase = findDriver(currentDatabase.dbms!!)
+            val connection = DriverManager.getConnection(
+                "${targetDatabase?.url}${systemName}",
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            )
+            DSL.using(connection).dropTable(tableName).execute()
+            connection.close()
+            ResponseEntity(mapOf("status" to "success"), HttpStatus.OK)
+        } catch (ex: Exception) {
+            logger.error(ex.message)
+            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
+        }
+    }
 
-    fun createTable(token: String, request: CreateTableRequest) {
-        try {
+    fun createTable(token: String, request: CreateTableRequest): ResponseEntity<Map<String, String?>> {
+        return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
@@ -289,16 +198,19 @@ class TableManagerService(
                 )
             }
 
-
-            table.tableElements(fields)
-
             for (i in fields.indices) {
                 if (request.columns[i].isPrimaryKey)
                     table.primaryKey(fields[i])
                 if (request.columns[i].isUnique)
                     table.unique(fields[i])
+                if (request.columns[i].isForeignKey) {
+                    table.constraints(
+                        constraint().foreignKey(fields[i])
+                            .references(request.columns[i].targetTable, request.columns[i].targetColumn)
+                    )
+                }
             }
-
+            table.tableElements(fields)
             table.execute()
 
             for (i in fields.indices) {
@@ -313,11 +225,19 @@ class TableManagerService(
                         .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(request.columns[i].dataType!!))
                 }
             }
-
-            logger.info(table.sql)
-            println()
+            connection.close()
+            ResponseEntity(
+                mapOf(
+                    "status" to "Таблица '${request.tableName}' успешно создана"
+                ), HttpStatus.OK
+            )
         } catch (ex: Exception) {
             logger.error(ex.message)
+            ResponseEntity(
+                mapOf(
+                    "status" to ex.message
+                ), HttpStatus.BAD_REQUEST
+            )
         }
     }
 

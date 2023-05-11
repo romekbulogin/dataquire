@@ -1,6 +1,7 @@
 package ru.dataquire.authorizationservice.service
 
-import io.jsonwebtoken.Jwts
+import jakarta.mail.internet.AddressException
+import jakarta.mail.internet.InternetAddress
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -8,15 +9,15 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import ru.dataquire.authorizationservice.response.UserResponse
 import ru.dataquire.authorizationservice.entity.Role
 import ru.dataquire.authorizationservice.entity.UserEntity
 import ru.dataquire.authorizationservice.repository.UserRepository
 import ru.dataquire.authorizationservice.request.AuthenticationRequest
 import ru.dataquire.authorizationservice.request.RegistrationRequest
 import ru.dataquire.authorizationservice.response.AuthenticationResponse
-import ru.dataquire.authorizationservice.service.MailService
-import java.util.UUID
+import ru.dataquire.authorizationservice.response.UserResponse
+import java.util.*
+
 
 @Service
 class AuthenticationService(
@@ -30,8 +31,12 @@ class AuthenticationService(
 
     fun registration(request: RegistrationRequest): Any {
         try {
-            if (request.email.isNotEmpty() && request.username.isNotEmpty() && request.password.isNotEmpty()) {
+            if (request.email.isNotEmpty() && request.username.isNotEmpty() && request.password.isNotEmpty() && isValidEmailAddress(
+                    request.email
+                )
+            ) {
                 logger.info("[Request] Registration: $request")
+
                 val user = UserEntity().apply {
                     setUsername(request.username)
                     setEmail(request.email)
@@ -57,13 +62,22 @@ class AuthenticationService(
             }
         } catch (ex: Exception) {
             logger.error(ex.message)
-            return ResponseEntity.badRequest()
+            return ResponseEntity(mapOf("response" to "Не удалось создать учетную запись"), HttpStatus.BAD_REQUEST)
+        } catch (ex: AddressException) {
+            logger.error(ex.message)
+            return ResponseEntity(
+                mapOf("response" to "Ошибка адреса электронной почты"),
+                HttpStatus.BAD_REQUEST
+            )
         }
     }
 
     fun authentication(request: AuthenticationRequest): Any {
         try {
-            return if (request.email.isNotEmpty() && request.password.isNotEmpty()) {
+            return if (request.email.isNotEmpty() && request.password.isNotEmpty() && isValidEmailAddress(
+                    request.email
+                )
+            ) {
                 logger.info("[Request] Authentication: $request")
                 authenticationManager.authenticate(UsernamePasswordAuthenticationToken(request.email, request.password))
                 val user = userRepository.findByEmail(request.email).orElseThrow()
@@ -74,11 +88,14 @@ class AuthenticationService(
                     this.role = user.getRole()
                 })
             } else {
-                ResponseEntity.badRequest()
+                ResponseEntity(mapOf("response" to "Введены неверные параметры авторизации"), HttpStatus.BAD_REQUEST)
             }
         } catch (ex: Exception) {
             logger.error(ex.message)
-            return ResponseEntity.badRequest()
+            return ResponseEntity(
+                mapOf("response" to "Не удалось найти пользоватля с ${request.email}"),
+                HttpStatus.BAD_REQUEST
+            )
         }
     }
 
@@ -130,6 +147,16 @@ class AuthenticationService(
         } catch (ex: Exception) {
             logger.error(ex.message)
             mapOf("status" to "error sending")
+        }
+    }
+
+    fun isValidEmailAddress(email: String?): Boolean {
+        try {
+            val emailAddr = InternetAddress(email)
+            emailAddr.validate()
+            return true
+        } catch (ex: AddressException) {
+            throw AddressException("Email is not valid")
         }
     }
 }
