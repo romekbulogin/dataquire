@@ -36,7 +36,7 @@ interface DatabaseRepository : JpaRepository<DatabaseEntity, UUID> {
     ): DatabaseEntity
 
     fun findAllByUserEntity(userEntity: UserEntity): List<DatabaseForList>
-    fun findDatabaseEntityByUserEntityAndSystemName(userEntity: UserEntity, systemName: String): DatabaseEntity
+    fun findDatabaseEntityByUserEntityAndSystemName(userEntity: UserEntity, systemName: String): Database
 
     fun findAllByUserEntityAndDbms(userEntity: UserEntity, dbms: String): List<DatabaseInDBMS>
 }

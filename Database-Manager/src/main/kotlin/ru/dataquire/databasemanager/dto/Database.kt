@@ -5,5 +5,6 @@ data class Database(
     var systemName: String? = null,
     var databaseName: String? = null,
     var login: String? = null,
+    var url: String? = null,
     var passwordDbms: String? = null,
 )
