@@ -116,7 +116,7 @@ class DatabaseService(
             val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
             val dslContext = DSL.using(connection)
-            connection.createStatement().execute("create database $systemName")
+            connection.createStatement().executeUpdate("create database $systemName")
             dslContext.grant(DSL.privilege("ALL")).on(systemName).to(DSL.user(user.username)).execute()
 
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
@@ -148,7 +148,7 @@ class DatabaseService(
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
             val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection?.createStatement()?.execute("drop database $systemName")
+            connection?.createStatement()?.executeUpdate("drop database $systemName")
             connection?.createStatement()
                 ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
             connection.close()
@@ -171,7 +171,7 @@ class DatabaseService(
                     request.dbms.toString(),
                     request.systemName.toString()
                 )
-            connection?.createStatement()?.execute("drop database ${currentDatabase.systemName}")
+            connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
             connection?.createStatement()?.execute(
                 convertDeleteUserQuery(database?.dbms!!).replace(
                     "usertag",
@@ -316,7 +316,7 @@ class DatabaseService(
             val password = RandomStringUtils.random(30, true, true)
             val login = RandomStringUtils.random(10, true, false)
 
-            connection.createStatement().execute(
+            connection.createStatement().executeUpdate(
                 convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
                     .replace("passtag", password)
             )
