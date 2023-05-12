@@ -5,8 +5,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Service
-import ru.dataquire.databasemanager.feign.request.FindInstance
-import ru.dataquire.databasemanager.feign.request.InstanceEntity
 import ru.dataquire.queryexecutor.dto.UserCredentials
 import ru.dataquire.queryexecutor.feign.InstanceKeeperClient
 import ru.dataquire.queryexecutor.request.QueryRequest
@@ -16,14 +14,27 @@ import javax.crypto.Cipher
 
 @Service
 class QueryConsumer(
-    private val instanceKeeperClient: InstanceKeeperClient,
     private val mainDatabaseInstance: DriverManagerDataSource,
     private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
-    fun findDriver(dbms: String): InstanceEntity? {
+    fun findTargetUrl(dbms: String, userCredentials: UserCredentials): String? {
         return try {
-            instanceKeeperClient.findInstanceByDbms(FindInstance(dbms))
+            var url: String? = null
+            val connection = mainDatabaseInstance.connection
+            val statement =
+                connection.prepareStatement("select url from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
+            statement.setString(1, userCredentials.login)
+            statement.setString(2, userCredentials.password)
+            val resultSet = statement.executeQuery()
+            while (resultSet?.next() == true) {
+                for (i in 1..resultSet.metaData.columnCount) {
+                    url = resultSet.getString("url")
+                }
+            }
+            resultSet.close()
+            connection.close()
+            url
         } catch (ex: Exception) {
             logger.error(ex.message)
             null
@@ -50,20 +61,19 @@ class QueryConsumer(
     fun executeQuery(request: QueryRequest): Any? {
         try {
             logger.info("Request execute: $request")
-            val dataSource = findDriver(request.dbms)
             val userCredentials = getUserCredentials(request.login, request.database)
-            logger.info(dataSource.toString())
+            val url = findTargetUrl(request.dbms, userCredentials!!)
             logger.info(userCredentials.toString())
             val driverManagerDataSources = DriverManagerDataSource().apply {
-                url = dataSource?.url + request.database
-                username = userCredentials?.login
+                this.url = url
+                username = userCredentials.login
                 password = String(
                     decryptCipher.doFinal(
-                        Base64.getDecoder().decode(userCredentials?.password)
+                        Base64.getDecoder().decode(userCredentials.password)
                     )
                 )
             }
-            logger.debug("Current connection: ${dataSource?.url}")
+            logger.debug("Current connection: $url")
             val connection = driverManagerDataSources.connection
             val resultSet = connection.createStatement()?.executeQuery(request.sql)
 

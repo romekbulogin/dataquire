@@ -1,10 +1,7 @@
 package ru.dataquire.databasemanager.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
-import org.jooq.impl.DSL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -18,12 +15,11 @@ import ru.dataquire.databasemanager.repository.UserRepository
 import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
 import ru.dataquire.databasemanager.request.DatabaseRequest
 import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
-import java.sql.Connection
+import ru.dataquire.databasemanager.request.OwnDatabaseRequest
 import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
-import kotlin.reflect.full.memberProperties
 
 
 @Service
@@ -122,7 +118,9 @@ class DatabaseService(
                 true,
                 true
             ).lowercase(Locale.getDefault())
+
         val targetDatabase = findDriver(request.dbms!!)
+
         val user = createUser(targetDatabase!!)
         return try {
             val connection =
@@ -137,6 +135,7 @@ class DatabaseService(
                 this.databaseName = request.database
                 this.userEntity = currentUser
                 this.login = user.username
+                this.url = targetDatabase.url + systemName
                 this.passwordDbms =
                     Base64.getEncoder()
                         .encodeToString(encryptCipher.doFinal(user.password?.toByteArray(Charsets.UTF_8)))
@@ -171,10 +170,59 @@ class DatabaseService(
         }
     }
 
+    fun addYourOwnDatabase(request: OwnDatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
+        val systemName =
+            RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault()) + RandomStringUtils.random(
+                30,
+                true,
+                true
+            ).lowercase(Locale.getDefault())
+
+        val targetDatabase = findDriver(request.dbms!!)
+
+        return try {
+            request.url = replaceIpAddress(targetDatabase?.url!!, request.url!!, request.database!!)
+            logger.info(request.toString())
+            val connection =
+                DriverManager.getConnection(request.url, request.login, request.password)
+            if (connection.isClosed) {
+                throw Exception("Connection refused")
+            } else {
+                val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+                val database = DatabaseEntity().apply {
+                    this.dbms = request.dbms
+                    this.systemName = systemName
+                    this.databaseName = request.database
+                    this.userEntity = currentUser
+                    this.login = request.login
+                    this.url = request.url
+                    this.passwordDbms =
+                        Base64.getEncoder()
+                            .encodeToString(encryptCipher.doFinal(request.password?.toByteArray(Charsets.UTF_8)))
+                }
+                databaseRepository.save(database)
+                currentUser.addDatabase(database)
+                userRepository.save(currentUser)
+
+                connection.close()
+                ResponseEntity(
+                    mapOf(
+                        "status" to "Database ${request.database} successfully added"
+                    ), HttpStatus.OK
+                )
+            }
+        } catch (ex: Exception) {
+            logger.error("Database added error: ${request.database}. Exception: ${ex.message}")
+            ResponseEntity(
+                mapOf(
+                    "error" to "Database added error: ${request.database}",
+                ), HttpStatus.BAD_REQUEST
+            )
+        }
+    }
+
     fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
-            val database = findDriver(request.dbms.toString())
-            val connection = DriverManager.getConnection(database?.url, database?.username, database?.password)
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
@@ -182,9 +230,13 @@ class DatabaseService(
                     request.dbms.toString(),
                     request.systemName.toString()
                 )
+            val connection = DriverManager.getConnection(
+                currentDatabase.url, currentDatabase.login, Base64.getEncoder()
+                    .encodeToString(encryptCipher.doFinal(currentDatabase.passwordDbms?.toByteArray(Charsets.UTF_8)))
+            )
             connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
             connection?.createStatement()?.execute(
-                convertDeleteUserQuery(database?.dbms!!).replace(
+                convertDeleteUserQuery(currentDatabase.dbms!!).replace(
                     "usertag",
                     currentDatabase.login!!
                 )
@@ -194,6 +246,32 @@ class DatabaseService(
             logger.info("Database: ${request.database} deleted successfully")
 
             connection?.close()
+            ResponseEntity(
+                mapOf("response" to "Database: ${request.database} deleted successfully"),
+                HttpStatus.OK
+            )
+        } catch (ex: Exception) {
+            logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
+            ResponseEntity(
+                mapOf(
+                    "error" to "Database deletion error: ${request.database}"
+                ), HttpStatus.BAD_REQUEST
+            )
+        }
+    }
+
+    fun deleteYourOwnDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
+                    request.database.toString(),
+                    request.dbms.toString(),
+                    request.systemName.toString()
+                )
+            currentUser.deleteDatabase(currentDatabase)
+            databaseRepository.delete(currentDatabase)
+            logger.info("Database: ${request.database} deleted successfully")
             ResponseEntity(
                 mapOf("response" to "Database: ${request.database} deleted successfully"),
                 HttpStatus.OK
@@ -232,7 +310,6 @@ class DatabaseService(
                 currentUser,
                 systemName
             )
-            val instance = findDriver(currentDatabase.dbms!!)
             currentDatabase.apply {
                 passwordDbms = String(
                     decryptCipher.doFinal(
@@ -242,7 +319,7 @@ class DatabaseService(
             }
 
             ResponseEntity(
-                currentDatabase.asMap().plus(mapOf("url" to instance?.url)), HttpStatus.OK
+                currentDatabase, HttpStatus.OK
             )
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -252,11 +329,6 @@ class DatabaseService(
                 ), HttpStatus.BAD_REQUEST
             )
         }
-    }
-
-    private inline fun <reified T : Any> T.asMap(): Map<String, Any?> {
-        val props = T::class.memberProperties.associateBy { it.name }
-        return props.keys.associateWith { props[it]?.get(this) }
     }
 
     fun findDatabaseInDBMS(token: String, dbms: String): ResponseEntity<Any> {
@@ -366,5 +438,23 @@ class DatabaseService(
         } catch (ex: Exception) {
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
         }
+    }
+
+    fun replaceIpAddress(connectionString: String, newIpAddress: String, databaseName: String): String? {
+        val splitAddress = connectionString.split("//").toMutableList()
+        val stringBuilder = StringBuilder()
+        stringBuilder.append(splitAddress[0]).append("//")
+
+
+        var address = splitAddress[1].split("/")
+        if (address.size == 2) {
+            stringBuilder.append(newIpAddress).append("/").append(databaseName)
+        } else {
+            address = splitAddress[1].split(";")
+            stringBuilder.append(newIpAddress).append(";").append(address[1]).append(databaseName)
+        }
+
+
+        return stringBuilder.toString()
     }
 }

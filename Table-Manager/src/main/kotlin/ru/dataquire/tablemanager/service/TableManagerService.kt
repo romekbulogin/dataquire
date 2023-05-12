@@ -34,28 +34,19 @@ class TableManagerService(
     private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
-    private fun findDriver(driverName: String): InstanceEntity? {
-        return try {
-            instanceKeeperClient.findInstanceByDbms(FindInstance(driverName))
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            throw RuntimeException("DBMS url not found")
-        }
-    }
 
     fun viewTable(token: String, request: ViewTableRequest): Any {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, request.systemName!!)
-            val targetDatabase = findDriver(currentDatabase.dbms!!)
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
 
 
             val connection =
                 DriverManager.getConnection(
-                    "${targetDatabase?.url}${currentDatabase.systemName}",
+                    currentDatabase.url,
                     currentDatabase.login,
                     String(
                         decryptCipher.doFinal(
@@ -106,9 +97,8 @@ class TableManagerService(
                     currentUser,
                     request.systemName!!
                 )
-            val targetDatabase = findDriver(currentDatabase.dbms!!)
             val connection = DriverManager.getConnection(
-                "${targetDatabase?.url}${request.systemName}",
+                currentDatabase.url,
                 currentDatabase.login,
                 String(
                     decryptCipher.doFinal(
@@ -141,9 +131,8 @@ class TableManagerService(
                     currentUser,
                     systemName
                 )
-            val targetDatabase = findDriver(currentDatabase.dbms!!)
             val connection = DriverManager.getConnection(
-                "${targetDatabase?.url}${systemName}",
+                currentDatabase.url,
                 currentDatabase.login,
                 String(
                     decryptCipher.doFinal(
@@ -168,9 +157,8 @@ class TableManagerService(
                     currentUser,
                     request.tableSystemInfo?.systemName!!
                 )
-            val targetDatabase = findDriver(currentDatabase.dbms!!)
             val connection = DriverManager.getConnection(
-                "${targetDatabase?.url}${request.tableSystemInfo?.systemName}",
+                currentDatabase.url,
                 currentDatabase.login,
                 String(
                     decryptCipher.doFinal(

@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*
 import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
 import ru.dataquire.databasemanager.request.DatabaseRequest
 import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
+import ru.dataquire.databasemanager.request.OwnDatabaseRequest
 import ru.dataquire.databasemanager.service.DatabaseService
 
 @RestController
@@ -67,6 +68,24 @@ class DatabaseController(
     ): ResponseEntity<Map<String, Any>> {
         logger.info("Request for update credentials")
         return databaseService.updateCredentials(request, token)
+    }
+
+    @PostMapping("/add")
+    fun addYourOwnDatabase(
+        @RequestBody request: OwnDatabaseRequest,
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<Map<String, String>> {
+        logger.info("Request for add your own database")
+        return databaseService.addYourOwnDatabase(request, token)
+    }
+
+    @PostMapping("/delete_your_own")
+    fun deleteYourOwnDatabase(
+        @RequestBody request: DeleteDatabaseRequest,
+        @RequestHeader("Authorization") token: String
+    ): ResponseEntity<Map<String, Any>> {
+        logger.info("Request for add your own database")
+        return databaseService.deleteYourOwnDatabase(request, token)
     }
 
     @GetMapping("/dbms")
