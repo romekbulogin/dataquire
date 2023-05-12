@@ -103,6 +103,18 @@ class DatabaseService(
         }
     }
 
+    private fun convertDatabaseGrant(dbms: String, systemName: String, username: String): String {
+        return when (dbms) {
+            "PostgreSQL" -> "ALTER DATABASE $systemName OWNER TO $username"
+            "MySQL" -> "GRANT ALL PRIVILEGES ON ${systemName}.* TO '${username}'@'%';";
+            "Oracle" -> "DROP USER usertag;"
+            "MSSQL" -> "ALTER AUTHORIZATION ON DATABASE::${systemName} TO $username"
+            else -> {
+                throw Exception("$dbms is not found")
+            }
+        }
+    }
+
     fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
         val systemName =
             RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault()) + RandomStringUtils.random(
@@ -115,10 +127,9 @@ class DatabaseService(
         return try {
             val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            val dslContext = DSL.using(connection)
             connection.createStatement().executeUpdate("create database $systemName")
-            dslContext.grant(DSL.privilege("ALL")).on(systemName).to(DSL.user(user.username)).execute()
-
+            connection.createStatement()
+                .executeUpdate(convertDatabaseGrant(targetDatabase.dbms!!, systemName, user.username!!))
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val database = DatabaseEntity().apply {
                 this.dbms = request.dbms
