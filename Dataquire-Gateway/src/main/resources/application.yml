@@ -9,7 +9,9 @@ spring:
         corsConfigurations:
           '[/**]':
             allowCredentials: true
-            allowedOrigins: "http://dataquire.ru:3000"
+            allowedOrigins:
+              - "http://dataquire.ru:3000"
+              - "http://localhost:3000"
             allowedHeaders: "*"
             allowedMethods: "*"
       discovery:
