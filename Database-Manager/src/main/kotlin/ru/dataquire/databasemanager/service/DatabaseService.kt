@@ -116,7 +116,7 @@ class DatabaseService(
             val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
             val dslContext = DSL.using(connection)
-            dslContext.createDatabase(systemName).execute()
+            connection.createStatement().execute("create database $systemName")
             dslContext.grant(DSL.privilege("ALL")).on(systemName).to(DSL.user(user.username)).execute()
 
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
