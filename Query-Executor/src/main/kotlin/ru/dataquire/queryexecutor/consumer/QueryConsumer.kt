@@ -18,14 +18,14 @@ class QueryConsumer(
     private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
-    fun findTargetUrl(dbms: String, userCredentials: UserCredentials): String? {
+    fun findTargetUrl(dbms: String, email: String, database: String): String? {
         return try {
             var url: String? = null
             val connection = mainDatabaseInstance.connection
             val statement =
                 connection.prepareStatement("select url from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
-            statement.setString(1, userCredentials.login)
-            statement.setString(2, userCredentials.password)
+            statement.setString(1, email)
+            statement.setString(2, database)
             val resultSet = statement.executeQuery()
             while (resultSet?.next() == true) {
                 for (i in 1..resultSet.metaData.columnCount) {
@@ -62,14 +62,14 @@ class QueryConsumer(
         try {
             logger.info("Request execute: $request")
             val userCredentials = getUserCredentials(request.login, request.database)
-            val url = findTargetUrl(request.dbms, userCredentials!!)
+            val url = findTargetUrl(request.dbms, request.login, request.database)
             logger.info(userCredentials.toString())
             val driverManagerDataSources = DriverManagerDataSource().apply {
                 this.url = url
-                username = userCredentials.login
+                username = userCredentials?.login
                 password = String(
                     decryptCipher.doFinal(
-                        Base64.getDecoder().decode(userCredentials.password)
+                        Base64.getDecoder().decode(userCredentials?.password)
                     )
                 )
             }
