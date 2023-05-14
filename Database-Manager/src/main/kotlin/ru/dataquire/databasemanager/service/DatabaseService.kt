@@ -20,6 +20,7 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
+import kotlin.math.log
 
 
 @Service
@@ -445,7 +446,45 @@ class DatabaseService(
         }
     }
 
-    fun replaceIpAddress(connectionString: String, newIpAddress: String, databaseName: String): String? {
+    fun getDatabaseStructure(token: String, systemName: String): ResponseEntity<Any> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
+            val connection = DriverManager.getConnection(
+                currentDatabase.url,
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            )
+            val tables = mutableListOf<Map<String, MutableMap<String, String>>>()
+            var columns = mutableMapOf<String, String>()
+
+            val rs = connection.metaData.getTables(null, null, "%", arrayOf("TABLE"))
+            while (rs.next()) {
+                val table = rs.getString("TABLE_NAME")
+                val resultSetColumns = connection.metaData.getColumns(null, null, table, null)
+
+                while (resultSetColumns.next()) {
+                    columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
+                }
+                tables.add(mapOf(table to columns))
+                columns = mutableMapOf()
+                resultSetColumns.close()
+            }
+            rs.close()
+            connection.close()
+            ResponseEntity(tables, HttpStatus.OK)
+        } catch (ex: Exception) {
+            logger.error(ex.message)
+            ResponseEntity(mapOf("status" to "Не удалось получить структуру базы данных"), HttpStatus.BAD_REQUEST)
+        }
+    }
+
+    private fun replaceIpAddress(connectionString: String, newIpAddress: String, databaseName: String): String? {
         val splitAddress = connectionString.split("//").toMutableList()
         val stringBuilder = StringBuilder()
         stringBuilder.append(splitAddress[0]).append("//")
@@ -458,7 +497,6 @@ class DatabaseService(
             address = splitAddress[1].split(";")
             stringBuilder.append(newIpAddress).append(";").append(address[1]).append(databaseName)
         }
-
 
         return stringBuilder.toString()
     }
