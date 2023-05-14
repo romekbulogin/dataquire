@@ -352,8 +352,6 @@ class DatabaseService(
 
     fun updateCredentials(request: ChangeCredentialsRequest, token: String): ResponseEntity<Map<String, Any>> {
         return try {
-            val instance = findDriver(request.dbms!!)
-            val connection = DriverManager.getConnection(instance?.url, instance?.username, instance?.password)
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
@@ -362,14 +360,22 @@ class DatabaseService(
                     request.systemName.toString(),
                     request.database.toString()
                 )
+            val connection = DriverManager.getConnection(
+                currentDatabase.url, currentDatabase.login, String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            )
+
             val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
             val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
             connection.createStatement().execute(
-                convertUpdateUsernameQuery(instance?.dbms!!).replace("oldusername", currentDatabase.login!!)
+                convertUpdateUsernameQuery(currentDatabase.dbms!!).replace("oldusername", currentDatabase.login!!)
                     .replace("newusername", login)
             )
             connection.createStatement().execute(
-                convertUpdatePasswordQuery(instance.dbms!!).replace("usertag", login)
+                convertUpdatePasswordQuery(currentDatabase.dbms!!).replace("usertag", login)
                     .replace("passtag", password)
             )
             connection.close()
@@ -416,9 +422,8 @@ class DatabaseService(
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
-            val instance = findDriver(currentDatabase.dbms.toString())
             val connection = DriverManager.getConnection(
-                "${instance?.url}${currentDatabase.systemName}",
+                currentDatabase.url,
                 currentDatabase.login,
                 String(
                     decryptCipher.doFinal(
