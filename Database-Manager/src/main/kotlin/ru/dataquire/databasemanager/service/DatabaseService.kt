@@ -403,8 +403,8 @@ class DatabaseService(
         return try {
             val connection = DriverManager.getConnection(instance.url, instance.username, instance.password)
 
-            val password = RandomStringUtils.random(30, true, true)
-            val login = RandomStringUtils.random(10, true, false)
+            val password = RandomStringUtils.random(30, true, true).lowercase()
+            val login = RandomStringUtils.random(10, true, false).lowercase()
 
             connection.createStatement().executeUpdate(
                 convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
