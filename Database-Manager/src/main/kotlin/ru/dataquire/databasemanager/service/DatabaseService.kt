@@ -361,12 +361,9 @@ class DatabaseService(
                     request.systemName.toString(),
                     request.database.toString()
                 )
+            val instance = findDriver(currentDatabase.dbms!!)
             val connection = DriverManager.getConnection(
-                currentDatabase.url, currentDatabase.login, String(
-                    decryptCipher.doFinal(
-                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
-                    )
-                )
+                instance?.url, instance?.username, instance?.password
             )
 
             val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
