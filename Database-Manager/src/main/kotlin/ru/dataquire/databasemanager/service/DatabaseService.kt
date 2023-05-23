@@ -443,7 +443,7 @@ class DatabaseService(
         }
     }
 
-    fun getDatabaseStructure(token: String, systemName: String): ResponseEntity<Any> {
+    fun getDatabaseStructure(token: String, systemName: String, table: String): ResponseEntity<Any> {
         return try {
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
@@ -457,24 +457,16 @@ class DatabaseService(
                     )
                 )
             )
-            val tables = mutableListOf<Map<String, MutableMap<String, String>>>()
-            var columns = mutableMapOf<String, String>()
+            val columns = mutableMapOf<String, String>()
 
-            val rs = connection.metaData.getTables(null, null, "%", arrayOf("TABLE"))
-            while (rs.next()) {
-                val table = rs.getString("TABLE_NAME")
-                val resultSetColumns = connection.metaData.getColumns(null, null, table, null)
+            val resultSetColumns = connection.metaData.getColumns(null, null, table, null)
 
-                while (resultSetColumns.next()) {
-                    columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
-                }
-                tables.add(mapOf(table to columns))
-                columns = mutableMapOf()
-                resultSetColumns.close()
+            while (resultSetColumns.next()) {
+                columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
             }
-            rs.close()
+            resultSetColumns.close()
             connection.close()
-            ResponseEntity(tables, HttpStatus.OK)
+            ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
             ResponseEntity(mapOf("status" to "Не удалось получить структуру базы данных"), HttpStatus.BAD_REQUEST)

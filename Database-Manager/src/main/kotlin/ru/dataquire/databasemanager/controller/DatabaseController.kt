@@ -91,10 +91,10 @@ class DatabaseController(
     @GetMapping("/dbms")
     fun getDbmsList() = databaseService.getDbmsList()
 
-    @GetMapping("/{systemName}/structure")
-    fun getDatabaseStructure(
-        @RequestHeader("Authorization") token: String, @PathVariable systemName: String
-    ) = databaseService.getDatabaseStructure(token, systemName)
+    @GetMapping("/{systemName}/{table}/structure")
+    fun getStructureOfTable(
+        @RequestHeader("Authorization") token: String, @PathVariable systemName: String, @PathVariable table: String
+    ) = databaseService.getDatabaseStructure(token, systemName, table)
 
     @GetMapping("/{dbms}/{systemName}/tables")
     fun getTablesOfDatabase(
