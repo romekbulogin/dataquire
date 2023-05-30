@@ -39,4 +39,12 @@ class TableController(private val tableManagerService: TableManagerService) {
         @PathVariable systemName: String
     ) =
         tableManagerService.dropTable(token, tableName, systemName)
+
+    @PostMapping("/update_raw/{systemName}/{tableName}")
+    fun updateRawInTable(
+        @RequestHeader("Authorization") token: String,
+        @PathVariable tableName: String,
+        @PathVariable systemName: String,
+        @RequestBody rows: List<Map<String, Any?>>
+    ) = tableManagerService.updateRowInTable(token, tableName, systemName, rows)
 }

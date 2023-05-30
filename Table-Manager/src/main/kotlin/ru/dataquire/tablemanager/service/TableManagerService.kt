@@ -1,25 +1,22 @@
 package ru.dataquire.tablemanager.service
 
 import mu.KotlinLogging
+import org.jooq.Condition
 import org.jooq.Field
-import org.jooq.SQLDialect
+import org.jooq.Record
 import org.jooq.impl.DSL
-import org.jooq.impl.DSL.constraint
+import org.jooq.impl.DSL.*
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import ru.dataquire.tablemanager.dto.Column
 import ru.dataquire.tablemanager.enums.SQLDataTypeEnum
 import ru.dataquire.tablemanager.enums.SQLDefaultDateType
-import ru.dataquire.tablemanager.feign.InstanceKeeperClient
-import ru.dataquire.tablemanager.feign.request.FindInstance
-import ru.dataquire.tablemanager.feign.request.InstanceEntity
 import ru.dataquire.tablemanager.repository.DatabaseRepository
 import ru.dataquire.tablemanager.repository.UserRepository
 import ru.dataquire.tablemanager.request.CreateTableRequest
 import ru.dataquire.tablemanager.request.ViewTableRequest
 import java.sql.DriverManager
-import java.sql.ResultSet
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
@@ -27,7 +24,6 @@ import javax.crypto.Cipher
 
 @Service
 class TableManagerService(
-    private val instanceKeeperClient: InstanceKeeperClient,
     private val userRepository: UserRepository,
     private val databaseRepository: DatabaseRepository,
     private val jwtService: JwtService,
@@ -84,9 +80,38 @@ class TableManagerService(
         }
     }
 
-    //TODO: реализовать метод для обновления данных в какой-либо таблице
-    fun updateRawInTable() {
-
+    fun updateRowInTable(
+        token: String,
+        tableName: String,
+        systemName: String,
+        rows: List<Map<String, Any?>>
+    ): ResponseEntity<Map<String, Any?>> {
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
+            val connection =
+                DriverManager.getConnection(
+                    currentDatabase.url,
+                    currentDatabase.login,
+                    String(
+                        decryptCipher.doFinal(
+                            Base64.getDecoder()
+                                .decode(currentDatabase.passwordDbms)
+                        )
+                    )
+                )
+            val dslContext = using(connection)
+            val conditions = mutableListOf<Condition>()
+            rows[0].forEach { (key, value) ->
+                conditions.add(field(key).eq(value))
+            }
+            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
+            ResponseEntity(mapOf("status" to true), HttpStatus.OK)
+        } catch (ex: Exception) {
+            logger.error(ex.message)
+            ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
+        }
     }
 
     fun getColumnForForeignKey(token: String, request: ViewTableRequest): ResponseEntity<Any> {
@@ -140,7 +165,7 @@ class TableManagerService(
                     )
                 )
             )
-            DSL.using(connection).dropTable(tableName).execute()
+            using(connection).dropTable(tableName).execute()
             connection.close()
             ResponseEntity(mapOf("status" to "success"), HttpStatus.OK)
         } catch (ex: Exception) {
@@ -167,10 +192,7 @@ class TableManagerService(
                 )
             )
 
-            val dslContext = if (currentDatabase.dbms!! == "PostgreSQL")
-                DSL.using(connection, SQLDialect.POSTGRES)
-            else
-                DSL.using(connection, SQLDialect.valueOf(currentDatabase.dbms!!))
+            val dslContext = using(connection)
 
             val fields = mutableListOf<Field<out Any>>()
 
