@@ -38,7 +38,7 @@ class TableController(private val tableManagerService: TableManagerService) {
         @PathVariable tableName: String,
         @PathVariable systemName: String
     ) =
-        tableManagerService.dropTable(token, tableName, systemName)
+        tableManagerService.dropTable(token, systemName, tableName)
 
     @PostMapping("/update_raw/{systemName}/{tableName}")
     fun updateRawInTable(

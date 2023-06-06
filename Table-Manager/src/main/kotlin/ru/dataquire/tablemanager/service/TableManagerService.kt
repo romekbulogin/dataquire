@@ -165,6 +165,8 @@ class TableManagerService(
 
     fun dropTable(token: String, systemName: String, tableName: String): ResponseEntity<Map<String, String?>> {
         return try {
+            logger.info("System: "+systemName)
+            logger.info("Table: "+tableName)
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(
