@@ -87,6 +87,7 @@ class TableManagerService(
         rows: List<Map<String, Any?>>
     ): ResponseEntity<Map<String, Any?>> {
         return try {
+            var countForDelete = 0
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
@@ -103,10 +104,27 @@ class TableManagerService(
                 )
             val dslContext = using(connection)
             val conditions = mutableListOf<Condition>()
-            rows[0].forEach { (key, value) ->
-                conditions.add(field(key).eq(value))
+            if (rows.size == 1) {
+                dslContext.insertInto(table(tableName)).set(rows[0]).execute()
+            } else {
+                rows[0].forEach { (key, value) ->
+                    conditions.add(field(key).eq(value))
+                }
+                rows[1].forEach { (key, value) ->
+                    if (value == null) {
+                        countForDelete += 1
+                        countForDelete = if (countForDelete == rows[1].size) {
+                            dslContext.deleteFrom(table(tableName)).where(conditions).execute()
+                            0
+                        } else {
+                            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
+                            0
+                        }
+                    }
+                }
             }
-            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
+
+
             ResponseEntity(mapOf("status" to true), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -193,14 +211,12 @@ class TableManagerService(
             )
 
             val dslContext = using(connection)
-
-            val fields = mutableListOf<Field<out Any>>()
-
             val table = dslContext.createTable(request.tableName)
+            val fields = mutableListOf<Field<out Any>>()
 
             request.columns.forEach { column ->
                 fields.add(
-                    DSL.field(
+                    field(
                         column.name,
                         SQLDataTypeEnum.getSqlDataType(column.dataType!!)?.nullable(column.isNull)
                             ?.length(column.length)?.identity(column.isIdentity)
