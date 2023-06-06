@@ -106,23 +106,20 @@ class TableManagerService(
             val conditions = mutableListOf<Condition>()
             if (rows.size == 1) {
                 dslContext.insertInto(table(tableName)).set(rows[0]).execute()
-            } else {
-                rows[0].forEach { (key, value) ->
-                    conditions.add(field(key).eq(value))
-                }
-                rows[1].forEach { (key, value) ->
-                    if (value == null) {
-                        countForDelete += 1
-                        countForDelete = if (countForDelete == rows[1].size) {
-                            dslContext.deleteFrom(table(tableName)).where(conditions).execute()
-                            0
-                        } else {
-                            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
-                            0
-                        }
+            }
+            rows[0].forEach { (key, value) ->
+                conditions.add(field(key).eq(value))
+            }
+            rows[1].forEach { (key, value) ->
+                if (value == null) {
+                    countForDelete += 1
+                    if (countForDelete == rows[1].size) {
+                        dslContext.deleteFrom(table(tableName)).where(conditions).execute()
+                        countForDelete = 0
                     }
                 }
             }
+            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
 
 
             ResponseEntity(mapOf("status" to true), HttpStatus.OK)
