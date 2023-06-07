@@ -152,10 +152,12 @@ class DatabaseService(
             val passBase64 = user.password?.toByteArray(Charsets.UTF_8)
             val sizePass = passBase64?.size
             logger.info("SIZE PASS: $sizePass")
+            logger.info("PASS: $password")
             val passEncode = Base64.getEncoder().encodeToString(encryptCipher.doFinal(passBase64))
+            logger.info("PASS ENCODE: $passEncode")
             val response = ResponseEntity(
                 mapOf(
-                    "status" to "Database ${request.database} $passEncode successfully created"
+                    "status" to "Database ${request.database} successfully created"
                 ), HttpStatus.OK
             )
 //            connection!!.endRequest()
