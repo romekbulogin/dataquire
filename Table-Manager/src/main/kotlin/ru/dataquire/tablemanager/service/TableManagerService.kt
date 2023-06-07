@@ -38,41 +38,39 @@ class TableManagerService(
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, request.systemName!!)
             val resultQuery = mutableListOf<MutableMap<String, Any?>>()
             var map = mutableMapOf<String, Any?>()
-
-
-            val connection =
-                DriverManager.getConnection(
-                    currentDatabase.url,
-                    currentDatabase.login,
-                    String(
-                        decryptCipher.doFinal(
-                            Base64.getDecoder()
-                                .decode(currentDatabase.passwordDbms)
-                        )
-                    )
-                )
-            val resultSet = connection.createStatement().executeQuery("select * from ${request.table}")
-
             val columns = mutableListOf<Column>()
 
-            val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
+            DriverManager.getConnection(
+                currentDatabase.url,
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder()
+                            .decode(currentDatabase.passwordDbms)
+                    )
+                )
+            ).use { connection ->
+                val resultSet = connection.createStatement().executeQuery("select * from ${request.table}")
 
-            while (resultSetColumns.next()) {
-                columns.add(Column().apply {
-                    field = resultSetColumns.getString("COLUMN_NAME")
-                    type = resultSetColumns.getString("TYPE_NAME")
-                })
-            }
 
-            while (resultSet.next()) {
-                for (i in 1..resultSet.metaData.columnCount) {
-                    map[resultSet.metaData.getColumnName(i)] = resultSet.getObject(i)
+                val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
+
+                while (resultSetColumns.next()) {
+                    columns.add(Column().apply {
+                        field = resultSetColumns.getString("COLUMN_NAME")
+                        type = resultSetColumns.getString("TYPE_NAME")
+                    })
                 }
-                resultQuery.add(map)
-                map = mutableMapOf()
+
+                while (resultSet.next()) {
+                    for (i in 1..resultSet.metaData.columnCount) {
+                        map[resultSet.metaData.getColumnName(i)] = resultSet.getObject(i)
+                    }
+                    resultQuery.add(map)
+                    map = mutableMapOf()
+                }
+                resultSet.close()
             }
-            resultSet.close()
-            connection.close()
             ResponseEntity(mapOf("columns" to columns, "rows" to resultQuery), HttpStatus.OK)
         } catch (ex: SQLException) {
             logger.error(ex.message)
@@ -91,37 +89,35 @@ class TableManagerService(
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val currentDatabase =
                 databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
-            val connection =
-                DriverManager.getConnection(
-                    currentDatabase.url,
-                    currentDatabase.login,
-                    String(
-                        decryptCipher.doFinal(
-                            Base64.getDecoder()
-                                .decode(currentDatabase.passwordDbms)
-                        )
+            DriverManager.getConnection(
+                currentDatabase.url,
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder()
+                            .decode(currentDatabase.passwordDbms)
                     )
                 )
-            val dslContext = using(connection)
-            val conditions = mutableListOf<Condition>()
-            if (rows.size == 1) {
-                dslContext.insertInto(table(tableName)).set(rows[0]).execute()
-            }
-            rows[0].forEach { (key, value) ->
-                conditions.add(field(key).eq(value))
-            }
-            rows[1].forEach { (key, value) ->
-                if (value == null) {
-                    countForDelete += 1
-                    if (countForDelete == rows[1].size) {
-                        dslContext.deleteFrom(table(tableName)).where(conditions).execute()
-                        countForDelete = 0
+            ).use { connection ->
+                val dslContext = using(connection)
+                val conditions = mutableListOf<Condition>()
+                if (rows.size == 1) {
+                    dslContext.insertInto(table(tableName)).set(rows[0]).execute()
+                }
+                rows[0].forEach { (key, value) ->
+                    conditions.add(field(key).eq(value))
+                }
+                rows[1].forEach { (key, value) ->
+                    if (value == null) {
+                        countForDelete += 1
+                        if (countForDelete == rows[1].size) {
+                            dslContext.deleteFrom(table(tableName)).where(conditions).execute()
+                            countForDelete = 0
+                        }
                     }
                 }
+                dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
             }
-            dslContext.update(table(tableName)).set(rows[1]).where(conditions).execute()
-
-
             ResponseEntity(mapOf("status" to true), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -137,7 +133,8 @@ class TableManagerService(
                     currentUser,
                     request.systemName!!
                 )
-            val connection = DriverManager.getConnection(
+            val columns = mutableListOf<String>()
+            DriverManager.getConnection(
                 currentDatabase.url,
                 currentDatabase.login,
                 String(
@@ -145,17 +142,14 @@ class TableManagerService(
                         Base64.getDecoder().decode(currentDatabase.passwordDbms)
                     )
                 )
-            )
-            val columns = mutableListOf<String>()
+            ).use { connection ->
+                val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
 
-            val resultSetColumns = connection.metaData.getColumns(null, null, request.table, null)
-
-            while (resultSetColumns.next()) {
-                columns.add(resultSetColumns.getString("COLUMN_NAME"))
+                while (resultSetColumns.next()) {
+                    columns.add(resultSetColumns.getString("COLUMN_NAME"))
+                }
             }
 
-            resultSetColumns.close()
-            connection.close()
             ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -171,7 +165,7 @@ class TableManagerService(
                     currentUser,
                     systemName
                 )
-            val connection = DriverManager.getConnection(
+            DriverManager.getConnection(
                 currentDatabase.url,
                 currentDatabase.login,
                 String(
@@ -179,9 +173,9 @@ class TableManagerService(
                         Base64.getDecoder().decode(currentDatabase.passwordDbms)
                     )
                 )
-            )
-            using(connection).dropTable(tableName).execute()
-            connection.close()
+            ).use { connection ->
+                using(connection).dropTable(tableName).execute()
+            }
             ResponseEntity(mapOf("status" to "success"), HttpStatus.OK)
         } catch (ex: Exception) {
             logger.error(ex.message)
@@ -197,7 +191,7 @@ class TableManagerService(
                     currentUser,
                     request.tableSystemInfo?.systemName!!
                 )
-            val connection = DriverManager.getConnection(
+            DriverManager.getConnection(
                 currentDatabase.url,
                 currentDatabase.login,
                 String(
@@ -205,50 +199,49 @@ class TableManagerService(
                         Base64.getDecoder().decode(currentDatabase.passwordDbms)
                     )
                 )
-            )
+            ).use { connection ->
+                val dslContext = using(connection)
+                val table = dslContext.createTable(request.tableName)
+                val fields = mutableListOf<Field<out Any>>()
 
-            val dslContext = using(connection)
-            val table = dslContext.createTable(request.tableName)
-            val fields = mutableListOf<Field<out Any>>()
-
-            request.columns.forEach { column ->
-                fields.add(
-                    field(
-                        column.name,
-                        SQLDataTypeEnum.getSqlDataType(column.dataType!!)?.nullable(column.isNull)
-                            ?.length(column.length)?.identity(column.isIdentity)
-                    )
-                )
-            }
-
-            for (i in fields.indices) {
-                if (request.columns[i].isPrimaryKey)
-                    table.primaryKey(fields[i])
-                if (request.columns[i].isUnique)
-                    table.unique(fields[i])
-                if (request.columns[i].isForeignKey) {
-                    table.constraints(
-                        constraint().foreignKey(fields[i])
-                            .references(request.columns[i].targetTable, request.columns[i].targetColumn)
+                request.columns.forEach { column ->
+                    fields.add(
+                        field(
+                            column.name,
+                            SQLDataTypeEnum.getSqlDataType(column.dataType!!)?.nullable(column.isNull)
+                                ?.length(column.length)?.identity(column.isIdentity)
+                        )
                     )
                 }
-            }
-            table.tableElements(fields)
-            table.execute()
 
-            for (i in fields.indices) {
-                if (request.columns[i].defaultValue != null) {
-                    dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
-                        .defaultValue(request.columns[i].defaultValue)
+                for (i in fields.indices) {
+                    if (request.columns[i].isPrimaryKey)
+                        table.primaryKey(fields[i])
+                    if (request.columns[i].isUnique)
+                        table.unique(fields[i])
+                    if (request.columns[i].isForeignKey) {
+                        table.constraints(
+                            constraint().foreignKey(fields[i])
+                                .references(request.columns[i].targetTable, request.columns[i].targetColumn)
+                        )
+                    }
                 }
-                if (request.columns[i].defaultValue != null || SQLDefaultDateType.getSqlDefaultDateTypes()
-                        .contains(request.columns[i].dataType)
-                ) {
-                    dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
-                        .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(request.columns[i].dataType!!))
+                table.tableElements(fields)
+                table.execute()
+
+                for (i in fields.indices) {
+                    if (request.columns[i].defaultValue != null) {
+                        dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
+                            .defaultValue(request.columns[i].defaultValue)
+                    }
+                    if (request.columns[i].defaultValue != null || SQLDefaultDateType.getSqlDefaultDateTypes()
+                            .contains(request.columns[i].dataType)
+                    ) {
+                        dslContext.alterTable(request.tableName).alterColumn(fields[i].name)
+                            .defaultValue(SQLDefaultDateType.getSqlDefaultDateType(request.columns[i].dataType!!))
+                    }
                 }
             }
-            connection.close()
             ResponseEntity(
                 mapOf(
                     "status" to "Таблица '${request.tableName}' успешно создана"

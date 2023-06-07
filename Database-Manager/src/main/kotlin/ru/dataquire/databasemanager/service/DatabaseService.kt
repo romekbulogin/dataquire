@@ -126,11 +126,12 @@ class DatabaseService(
         val user = createUser(targetDatabase!!)
         val passwordBytes = user.password?.toByteArray(Charsets.UTF_8)
         return try {
-            val connection =
-                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection.createStatement().executeUpdate("create database $systemName")
-            connection.createStatement()
-                .executeUpdate(convertDatabaseGrant(targetDatabase.dbms!!, systemName, user.username!!))
+            DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
+                .use { connection ->
+                    DSL.using(connection).createDatabase(systemName).execute()
+                    connection.createStatement()
+                        .executeUpdate(convertDatabaseGrant(targetDatabase.dbms!!, systemName, user.username!!))
+                }
             val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
             val database = DatabaseEntity().apply {
                 this.dbms = request.dbms
@@ -148,24 +149,21 @@ class DatabaseService(
             currentUser.addDatabase(database)
             userRepository.save(currentUser)
 
-            logger.info("${connection?.metaData?.databaseProductName}: ${request.database} created successfully")
+            logger.info("${request.dbms}: ${request.database} created successfully")
             val response = ResponseEntity(
                 mapOf(
                     "status" to "Database ${request.database} successfully created"
                 ), HttpStatus.OK
             )
-            connection!!.endRequest()
-            connection.close()
             response
         } catch (ex: Exception) {
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
-            val connection =
-                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection?.createStatement()?.executeUpdate("drop database $systemName")
-            connection?.createStatement()
-                ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
-            connection?.endRequest()
-            connection.close()
+            DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
+                .use { connection ->
+                    DSL.using(connection).dropDatabase(systemName).execute()
+                    connection?.createStatement()
+                        ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
+                }
             ResponseEntity(
                 mapOf(
                     "error" to "Database creation error: ${request.database}",
@@ -175,49 +173,39 @@ class DatabaseService(
     }
 
     fun addYourOwnDatabase(request: OwnDatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
-        val systemName =
-            RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault()) + RandomStringUtils.random(
-                30,
-                true,
-                true
-            ).lowercase(Locale.getDefault())
-
-        val targetDatabase = findDriver(request.dbms!!)
-
-        val connection =
-            DriverManager.getConnection(request.url, request.login, request.password)
         return try {
+            val systemName =
+                RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault()) + RandomStringUtils.random(
+                    30,
+                    true,
+                    true
+                ).lowercase(Locale.getDefault())
+
+            val targetDatabase = findDriver(request.dbms!!)
             request.url = replaceIpAddress(targetDatabase?.url!!, request.url!!, request.database!!)
             logger.info(request.toString())
-            if (connection.isClosed) {
-                throw Exception("Connection refused")
-            } else {
-                val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-                val database = DatabaseEntity().apply {
-                    this.dbms = request.dbms
-                    this.systemName = systemName
-                    this.databaseName = request.database
-                    this.userEntity = currentUser
-                    this.login = request.login
-                    this.url = request.url
-                    this.isImported = true
-                    this.passwordDbms =
-                        Base64.getEncoder()
-                            .encodeToString(encryptCipher.doFinal(request.password?.toByteArray(Charsets.UTF_8)))
-                }
-                databaseRepository.save(database)
-                currentUser.addDatabase(database)
-                userRepository.save(currentUser)
-                connection?.endRequest()
-                connection.close()
-                ResponseEntity(
-                    mapOf(
-                        "status" to "Database ${request.database} successfully added"
-                    ), HttpStatus.OK
-                )
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val database = DatabaseEntity().apply {
+                this.dbms = request.dbms
+                this.systemName = systemName
+                this.databaseName = request.database
+                this.userEntity = currentUser
+                this.login = request.login
+                this.url = request.url
+                this.isImported = true
+                this.passwordDbms =
+                    Base64.getEncoder()
+                        .encodeToString(encryptCipher.doFinal(request.password?.toByteArray(Charsets.UTF_8)))
             }
+            databaseRepository.save(database)
+            currentUser.addDatabase(database)
+            userRepository.save(currentUser)
+            ResponseEntity(
+                mapOf(
+                    "status" to "Database ${request.database} successfully added"
+                ), HttpStatus.OK
+            )
         } catch (ex: Exception) {
-            connection?.close()
             logger.error("Database added error: ${request.database}. Exception: ${ex.message}")
             ResponseEntity(
                 mapOf(
@@ -228,58 +216,39 @@ class DatabaseService(
     }
 
     fun deleteDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
-        val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-        val currentDatabase =
-            databaseRepository.findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
-                request.database.toString(),
-                request.dbms.toString(),
-                request.systemName.toString()
-            )
-        DriverManager.getConnection(
-            currentDatabase.url, "postgres", "1337"
-        ).use { connection ->
-            return try {
-                DSL.using(connection).dropDatabase(request.systemName).execute()
-                logger.info("Database: ${request.database} deleted successfully")
-                ResponseEntity(
-                    mapOf("response" to "Database: ${request.database} deleted successfully"),
-                    HttpStatus.OK
+        return try {
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
+                    currentUser,
+                    request.dbms.toString(),
+                    request.systemName.toString(),
+                    request.database.toString()
                 )
-            } catch (ex: Exception) {
-                logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
-                ResponseEntity(
-                    mapOf(
-                        "error" to "Database deletion error: ${request.database}"
-                    ), HttpStatus.BAD_REQUEST
-                )
+            if (currentDatabase.isImported == true) {
+                val targetDatabase = findDriver(request.dbms!!)
+                DriverManager.getConnection(
+                    targetDatabase?.url, targetDatabase?.username, targetDatabase?.password
+                ).use { connection ->
+                    DSL.using(connection).dropDatabase(request.systemName).execute()
+                    connection?.createStatement()
+                        ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", currentDatabase.login!!))
+                    logger.info("Database: ${request.database} deleted successfully")
+                }
             }
+            ResponseEntity(
+                mapOf("response" to "Database: ${request.database} deleted successfully"),
+                HttpStatus.OK
+            )
+        } catch (ex: Exception) {
+            logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
+            ResponseEntity(
+                mapOf(
+                    "error" to "Database deletion error: ${request.database}"
+                ), HttpStatus.BAD_REQUEST
+            )
         }
-//        return try {
-//            connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
-//            connection?.createStatement()?.execute(
-//                convertDeleteUserQuery(currentDatabase.dbms!!).replace(
-//                    "usertag",
-//                    currentDatabase.login!!
-//                )
-//            )
-//            connection?.endRequest()
-//            connection?.close()
-//            currentUser.deleteDatabase(currentDatabase)
-//            databaseRepository.delete(currentDatabase)
-//            logger.info("Database: ${request.database} deleted successfully")
-//            ResponseEntity(
-//                mapOf("response" to "Database: ${request.database} deleted successfully"),
-//                HttpStatus.OK
-//            )
-//        } catch (ex: Exception) {
-//            connection?.close()
-//            logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
-//            ResponseEntity(
-//                mapOf(
-//                    "error" to "Database deletion error: ${request.database}"
-//                ), HttpStatus.BAD_REQUEST
-//            )
-//        }
+
     }
 
     fun deleteYourOwnDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
@@ -373,40 +342,40 @@ class DatabaseService(
     }
 
     fun updateCredentials(request: ChangeCredentialsRequest, token: String): ResponseEntity<Map<String, Any>> {
-        val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-        val currentDatabase =
-            databaseRepository.findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
-                currentUser,
-                request.dbms.toString(),
-                request.systemName.toString(),
-                request.database.toString()
-            )
-        val instance = findDriver(currentDatabase.dbms!!)
-        val connection = DriverManager.getConnection(
-            instance?.url, instance?.username, instance?.password
-        )
         return try {
-            val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
-            val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
-            connection.createStatement().execute(
-                convertUpdateUsernameQuery(currentDatabase.dbms!!).replace("oldusername", currentDatabase.login!!)
-                    .replace("newusername", login)
-            )
-            connection.createStatement().execute(
-                convertUpdatePasswordQuery(currentDatabase.dbms!!).replace("usertag", login)
-                    .replace("passtag", password)
-            )
-            connection?.endRequest()
-            connection.close()
-            with(currentDatabase) {
-                this.login = login
-                this.passwordDbms = Base64.getEncoder()
-                    .encodeToString(encryptCipher.doFinal(password.toByteArray(Charsets.UTF_8)))
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
+                    currentUser,
+                    request.dbms.toString(),
+                    request.systemName.toString(),
+                    request.database.toString()
+                )
+            val instance = findDriver(currentDatabase.dbms!!)
+            DriverManager.getConnection(
+                instance?.url, instance?.username, instance?.password
+            ).use { connection ->
+                val password = RandomStringUtils.random(30, true, true).lowercase(Locale.getDefault())
+                val login = RandomStringUtils.random(10, true, false).lowercase(Locale.getDefault())
+                connection.createStatement().execute(
+                    convertUpdateUsernameQuery(currentDatabase.dbms!!).replace("oldusername", currentDatabase.login!!)
+                        .replace("newusername", login)
+                )
+                connection.createStatement().execute(
+                    convertUpdatePasswordQuery(currentDatabase.dbms!!).replace("usertag", login)
+                        .replace("passtag", password)
+                )
+                connection?.endRequest()
+                connection.close()
+                with(currentDatabase) {
+                    this.login = login
+                    this.passwordDbms = Base64.getEncoder()
+                        .encodeToString(encryptCipher.doFinal(password.toByteArray(Charsets.UTF_8)))
+                }
+                databaseRepository.save(currentDatabase)
+                ResponseEntity(null, HttpStatus.OK)
             }
-            databaseRepository.save(currentDatabase)
-            return ResponseEntity(null, HttpStatus.OK)
         } catch (ex: Exception) {
-            connection.close()
             logger.error("Change user credentials error: ${request.database}. Exception: ${ex.message}")
             ResponseEntity(
                 mapOf(
@@ -419,83 +388,75 @@ class DatabaseService(
     fun getDbmsList() = ResponseEntity(listOf("PostgreSQL", "MySQL", "MSSQL", "Oracle"), HttpStatus.OK)
 
     private fun createUser(instance: InstanceEntity): UserCredentials {
-        val connection = DriverManager.getConnection(instance.url, instance.username, instance.password)
         return try {
-            val password = RandomStringUtils.random(30, true, true).lowercase()
-            val login = RandomStringUtils.random(10, true, false).lowercase()
+            DriverManager.getConnection(instance.url, instance.username, instance.password).use { connection ->
+                val password = RandomStringUtils.random(30, true, true).lowercase()
+                val login = RandomStringUtils.random(10, true, false).lowercase()
 
-            connection.createStatement().executeUpdate(
-                convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
-                    .replace("passtag", password)
-            )
-            connection?.endRequest()
-            connection.close()
-            UserCredentials(login, password)
-        } catch (ex: SQLException) {
-            connection?.close()
+                connection.createStatement().executeUpdate(
+                    convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
+                        .replace("passtag", password)
+                )
+                UserCredentials(login, password)
+            }
+        } catch (ex: Exception) {
             logger.error(ex.message)
             throw ex
         }
     }
 
     fun getTablesOfDatabase(token: String, systemName: String): ResponseEntity<Any> {
-        val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-        val currentDatabase =
-            databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
-        val connection = DriverManager.getConnection(
-            currentDatabase.url,
-            currentDatabase.login,
-            String(
-                decryptCipher.doFinal(
-                    Base64.getDecoder().decode(currentDatabase.passwordDbms)
-                )
-            )
-        )
+
         return try {
-
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
             val tables = mutableListOf<String>()
-
-            val rs = connection.metaData.getTables(null, null, "%", arrayOf("TABLE"))
-            while (rs.next()) {
-                tables.add(rs.getString("TABLE_NAME"))
+            DriverManager.getConnection(
+                currentDatabase.url,
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            ).use { connection ->
+                val rs = connection.metaData.getTables(null, null, "%", arrayOf("TABLE"))
+                while (rs.next()) {
+                    tables.add(rs.getString("TABLE_NAME"))
+                }
+                rs.close()
             }
-            rs.close()
-            connection?.endRequest()
-            connection.close()
             ResponseEntity(tables, HttpStatus.OK)
         } catch (ex: Exception) {
-            connection?.close()
             ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
         }
     }
 
     fun getDatabaseStructure(token: String, systemName: String, table: String): ResponseEntity<Any> {
-        val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-        val currentDatabase =
-            databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
-        val connection = DriverManager.getConnection(
-            currentDatabase.url,
-            currentDatabase.login,
-            String(
-                decryptCipher.doFinal(
-                    Base64.getDecoder().decode(currentDatabase.passwordDbms)
-                )
-            )
-        )
         return try {
             val columns = mutableMapOf<String, String>()
+            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+            val currentDatabase =
+                databaseRepository.findDatabaseEntityByUserEntityAndSystemName(currentUser, systemName)
+            DriverManager.getConnection(
+                currentDatabase.url,
+                currentDatabase.login,
+                String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
+            ).use { connection ->
+                val resultSetColumns = connection.metaData.getColumns(null, null, table, null)
 
-            val resultSetColumns = connection.metaData.getColumns(null, null, table, null)
-
-            while (resultSetColumns.next()) {
-                columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
+                while (resultSetColumns.next()) {
+                    columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
+                }
+                resultSetColumns.close()
             }
-            resultSetColumns.close()
-            connection?.endRequest()
-            connection.close()
             ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
-            connection?.close()
             logger.error(ex.message)
             ResponseEntity(mapOf("status" to "Не удалось получить структуру базы данных"), HttpStatus.BAD_REQUEST)
         }

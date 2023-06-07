@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import ru.dataquire.queryexecutor.dto.UserCredentials
 import ru.dataquire.queryexecutor.feign.InstanceKeeperClient
 import ru.dataquire.queryexecutor.request.QueryRequest
+import java.sql.DriverManager
 import java.sql.SQLException
 import java.util.*
 import javax.crypto.Cipher
@@ -64,31 +65,29 @@ class QueryConsumer(
             val userCredentials = getUserCredentials(request.login, request.database)
             val url = findTargetUrl(request.dbms, request.login, request.database)
             logger.info(userCredentials.toString())
-            val driverManagerDataSources = DriverManagerDataSource().apply {
-                this.url = url
-                username = userCredentials?.login
-                password = String(
+            val result = mutableListOf<MutableMap<String, Any?>>()
+            var map = mutableMapOf<String, Any?>()
+            DriverManager.getConnection(
+                url,
+                userCredentials?.login,
+                String(
                     decryptCipher.doFinal(
                         Base64.getDecoder().decode(userCredentials?.password)
                     )
                 )
-            }
-            logger.debug("Current connection: $url")
-            val connection = driverManagerDataSources.connection
-            val resultSet = connection.createStatement()?.executeQuery(request.sql)
-
-            val result = mutableListOf<MutableMap<String, Any?>>()
-            var map = mutableMapOf<String, Any?>()
-
-            while (resultSet?.next() == true) {
-                for (i in 1..resultSet.metaData.columnCount) {
-                    map[resultSet.metaData.getColumnName(i)] = resultSet.getObject(i)
+            ).use { connection ->
+                logger.debug("Current connection: $url")
+                val resultSet = connection.createStatement()?.executeQuery(request.sql)
+                while (resultSet?.next() == true) {
+                    for (i in 1..resultSet.metaData.columnCount) {
+                        map[resultSet.metaData.getColumnName(i)] = resultSet.getObject(i)
+                    }
+                    result.add(map)
+                    map = mutableMapOf()
                 }
-                result.add(map)
-                map = mutableMapOf()
+                resultSet?.close()
             }
-            resultSet?.close()
-            connection.close()
+
             return result
         } catch (ex: SQLException) {
             logger.error(ex.message)
@@ -99,22 +98,22 @@ class QueryConsumer(
     private fun getUserCredentials(username: String, database: String): UserCredentials? {
         return try {
             val userCredentials = UserCredentials()
-            val connection = mainDatabaseInstance.connection
-            val statement =
-                connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
-            statement.setString(1, username)
-            statement.setString(2, database)
-            val resultSet = statement.executeQuery()
-            while (resultSet?.next() == true) {
-                for (i in 1..resultSet.metaData.columnCount) {
-                    userCredentials.apply {
-                        login = resultSet.getString("login")
-                        password = resultSet.getString("password_dbms")
+            mainDatabaseInstance.connection.use { connection ->
+                val statement =
+                    connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
+                statement.setString(1, username)
+                statement.setString(2, database)
+                val resultSet = statement.executeQuery()
+                while (resultSet?.next() == true) {
+                    for (i in 1..resultSet.metaData.columnCount) {
+                        userCredentials.apply {
+                            login = resultSet.getString("login")
+                            password = resultSet.getString("password_dbms")
+                        }
                     }
                 }
+                resultSet.close()
             }
-            resultSet.close()
-            connection.close()
             userCredentials
         } catch (ex: Exception) {
             logger.error(ex.message)
