@@ -2,6 +2,7 @@ package ru.dataquire.databasemanager.service
 
 import mu.KotlinLogging
 import org.apache.commons.lang3.RandomStringUtils
+import org.jooq.impl.DSL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -138,6 +139,7 @@ class DatabaseService(
                 this.userEntity = currentUser
                 this.login = user.username
                 this.url = targetDatabase.url + systemName
+                this.isImported = false
                 this.passwordDbms =
                     Base64.getEncoder()
                         .encodeToString(encryptCipher.doFinal(passwordBytes))
@@ -198,6 +200,7 @@ class DatabaseService(
                     this.userEntity = currentUser
                     this.login = request.login
                     this.url = request.url
+                    this.isImported = true
                     this.passwordDbms =
                         Base64.getEncoder()
                             .encodeToString(encryptCipher.doFinal(request.password?.toByteArray(Charsets.UTF_8)))
@@ -232,39 +235,51 @@ class DatabaseService(
                 request.dbms.toString(),
                 request.systemName.toString()
             )
-        val connection = DriverManager.getConnection(
-            currentDatabase.url, currentDatabase.login, String(
-                decryptCipher.doFinal(
-                    Base64.getDecoder().decode(currentDatabase.passwordDbms)
+        DriverManager.getConnection(
+            currentDatabase.url, "postgres", "1337"
+        ).use { connection ->
+            return try {
+                DSL.using(connection).dropDatabase(request.systemName).execute()
+                logger.info("Database: ${request.database} deleted successfully")
+                ResponseEntity(
+                    mapOf("response" to "Database: ${request.database} deleted successfully"),
+                    HttpStatus.OK
                 )
-            )
-        )
-        return try {
-            connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
-            connection?.createStatement()?.execute(
-                convertDeleteUserQuery(currentDatabase.dbms!!).replace(
-                    "usertag",
-                    currentDatabase.login!!
+            } catch (ex: Exception) {
+                logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
+                ResponseEntity(
+                    mapOf(
+                        "error" to "Database deletion error: ${request.database}"
+                    ), HttpStatus.BAD_REQUEST
                 )
-            )
-            connection?.endRequest()
-            connection?.close()
-            currentUser.deleteDatabase(currentDatabase)
-            databaseRepository.delete(currentDatabase)
-            logger.info("Database: ${request.database} deleted successfully")
-            ResponseEntity(
-                mapOf("response" to "Database: ${request.database} deleted successfully"),
-                HttpStatus.OK
-            )
-        } catch (ex: Exception) {
-            connection?.close()
-            logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
-            ResponseEntity(
-                mapOf(
-                    "error" to "Database deletion error: ${request.database}"
-                ), HttpStatus.BAD_REQUEST
-            )
+            }
         }
+//        return try {
+//            connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
+//            connection?.createStatement()?.execute(
+//                convertDeleteUserQuery(currentDatabase.dbms!!).replace(
+//                    "usertag",
+//                    currentDatabase.login!!
+//                )
+//            )
+//            connection?.endRequest()
+//            connection?.close()
+//            currentUser.deleteDatabase(currentDatabase)
+//            databaseRepository.delete(currentDatabase)
+//            logger.info("Database: ${request.database} deleted successfully")
+//            ResponseEntity(
+//                mapOf("response" to "Database: ${request.database} deleted successfully"),
+//                HttpStatus.OK
+//            )
+//        } catch (ex: Exception) {
+//            connection?.close()
+//            logger.error("Database deletion error: ${request.database}. Exception: ${ex.message}")
+//            ResponseEntity(
+//                mapOf(
+//                    "error" to "Database deletion error: ${request.database}"
+//                ), HttpStatus.BAD_REQUEST
+//            )
+//        }
     }
 
     fun deleteYourOwnDatabase(request: DeleteDatabaseRequest, token: String): ResponseEntity<Map<String, Any>> {
