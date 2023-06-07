@@ -124,8 +124,6 @@ class DatabaseService(
 
         val user = createUser(targetDatabase!!)
         val passwordBytes = user.password?.toByteArray(Charsets.UTF_8)
-        logger.info("PASSWORD: ${user.password}")
-        logger.info("SIZE BYTEARRAY: ${passwordBytes?.size}")
         return try {
             val connection =
                 DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
@@ -164,6 +162,7 @@ class DatabaseService(
             connection?.createStatement()?.executeUpdate("drop database $systemName")
             connection?.createStatement()
                 ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
+            connection?.endRequest()
             connection.close()
             ResponseEntity(
                 mapOf(
@@ -206,7 +205,7 @@ class DatabaseService(
                 databaseRepository.save(database)
                 currentUser.addDatabase(database)
                 userRepository.save(currentUser)
-
+                connection?.endRequest()
                 connection.close()
                 ResponseEntity(
                     mapOf(
@@ -247,11 +246,11 @@ class DatabaseService(
                     currentDatabase.login!!
                 )
             )
+            connection?.endRequest()
+            connection?.close()
             currentUser.deleteDatabase(currentDatabase)
             databaseRepository.delete(currentDatabase)
             logger.info("Database: ${request.database} deleted successfully")
-
-            connection?.close()
             ResponseEntity(
                 mapOf("response" to "Database: ${request.database} deleted successfully"),
                 HttpStatus.OK
@@ -381,6 +380,7 @@ class DatabaseService(
                 convertUpdatePasswordQuery(currentDatabase.dbms!!).replace("usertag", login)
                     .replace("passtag", password)
             )
+            connection?.endRequest()
             connection.close()
             with(currentDatabase) {
                 this.login = login
@@ -412,6 +412,7 @@ class DatabaseService(
                 convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
                     .replace("passtag", password)
             )
+            connection?.endRequest()
             connection.close()
             UserCredentials(login, password)
         } catch (ex: SQLException) {
@@ -441,6 +442,7 @@ class DatabaseService(
                 tables.add(rs.getString("TABLE_NAME"))
             }
             rs.close()
+            connection?.endRequest()
             connection.close()
             ResponseEntity(tables, HttpStatus.OK)
         } catch (ex: Exception) {
@@ -470,6 +472,7 @@ class DatabaseService(
                 columns[resultSetColumns.getString("COLUMN_NAME")] = resultSetColumns.getString("TYPE_NAME")
             }
             resultSetColumns.close()
+            connection?.endRequest()
             connection.close()
             ResponseEntity(columns, HttpStatus.OK)
         } catch (ex: Exception) {
