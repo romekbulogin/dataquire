@@ -16,6 +16,7 @@ data class DatabaseEntity(
     var login: String? = null,
     var passwordDbms: String? = null,
     var url: String? = null,
+    val isImport: Boolean? = null,
     @ManyToOne
     var userEntity: UserEntity? = null
 )
