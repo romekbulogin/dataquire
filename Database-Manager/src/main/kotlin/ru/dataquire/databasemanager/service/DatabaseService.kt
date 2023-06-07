@@ -234,8 +234,11 @@ class DatabaseService(
                     request.systemName.toString()
                 )
             val connection = DriverManager.getConnection(
-                currentDatabase.url, currentDatabase.login, Base64.getEncoder()
-                    .encodeToString(encryptCipher.doFinal(currentDatabase.passwordDbms?.toByteArray(Charsets.UTF_8)))
+                currentDatabase.url, currentDatabase.login, String(
+                    decryptCipher.doFinal(
+                        Base64.getDecoder().decode(currentDatabase.passwordDbms)
+                    )
+                )
             )
             connection?.createStatement()?.executeUpdate("drop database ${currentDatabase.systemName}")
             connection?.createStatement()?.execute(
