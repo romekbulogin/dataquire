@@ -94,7 +94,6 @@ class QueryConsumer(
             throw ex
         }
     }
-
     private fun getUserCredentials(username: String, database: String): UserCredentials? {
         return try {
             val userCredentials = UserCredentials()
