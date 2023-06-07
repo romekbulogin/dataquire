@@ -122,47 +122,53 @@ class DatabaseService(
 
         val targetDatabase = findDriver(request.dbms!!)
 
-        val user = createUser(targetDatabase!!)
+//        val user = createUser(targetDatabase!!)
         return try {
-            val connection =
-                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection.createStatement().executeUpdate("create database $systemName")
-            connection.createStatement()
-                .executeUpdate(convertDatabaseGrant(targetDatabase.dbms!!, systemName, user.username!!))
-            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
-            val database = DatabaseEntity().apply {
-                this.dbms = request.dbms
-                this.systemName = systemName
-                this.databaseName = request.database
-                this.userEntity = currentUser
-                this.login = user.username
-                this.url = targetDatabase.url + systemName
-                this.passwordDbms =
-                    Base64.getEncoder()
-                        .encodeToString(encryptCipher.doFinal(user.password?.toByteArray(Charsets.UTF_8)))
-            }
-            databaseRepository.save(database)
-            currentUser.addDatabase(database)
-            userRepository.save(currentUser)
+//            val connection =
+//                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
+//            connection.createStatement().executeUpdate("create database $systemName")
+//            connection.createStatement()
+//                .executeUpdate(convertDatabaseGrant(targetDatabase.dbms!!, systemName, user.username!!))
+//            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7)))
+//            val database = DatabaseEntity().apply {
+//                this.dbms = request.dbms
+//                this.systemName = systemName
+//                this.databaseName = request.database
+//                this.userEntity = currentUser
+//                this.login = user.username
+//                this.url = targetDatabase.url + systemName
+//                this.passwordDbms =
+//                    Base64.getEncoder()
+//                        .encodeToString(encryptCipher.doFinal(user.password?.toByteArray(Charsets.UTF_8)))
+//            }
+//            databaseRepository.save(database)
+//            currentUser.addDatabase(database)
+//            userRepository.save(currentUser)
 
-            logger.info("${connection?.metaData?.databaseProductName}: ${request.database} created successfully")
-
+//            logger.info("${connection?.metaData?.databaseProductName}: ${request.database} created successfully")
+            val password = RandomStringUtils.random(30, true, true).lowercase()
+            val login = RandomStringUtils.random(10, true, false).lowercase()
+            val user = UserCredentials(login, password)
+            val passBase64 = user.password?.toByteArray(Charsets.UTF_8)
+            val sizePass = passBase64?.size
+            logger.info("SIZE PASS: $sizePass")
+            val passEncode = Base64.getEncoder().encodeToString(encryptCipher.doFinal(passBase64))
             val response = ResponseEntity(
                 mapOf(
-                    "status" to "Database ${request.database} successfully created"
+                    "status" to "Database ${request.database} $passEncode successfully created"
                 ), HttpStatus.OK
             )
-            connection!!.endRequest()
-            connection.close()
+//            connection!!.endRequest()
+//            connection.close()
             response
         } catch (ex: Exception) {
             logger.error("Database creation error: ${request.database}. Exception: ${ex.message}")
-            val connection =
-                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
-            connection?.createStatement()?.executeUpdate("drop database $systemName")
-            connection?.createStatement()
-                ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
-            connection.close()
+//            val connection =
+//                DriverManager.getConnection(targetDatabase.url, targetDatabase.username, targetDatabase.password)
+//            connection?.createStatement()?.executeUpdate("drop database $systemName")
+//            connection?.createStatement()
+//                ?.execute(convertDeleteUserQuery(request.dbms!!).replace("usertag", user.username!!))
+//            connection.close()
             ResponseEntity(
                 mapOf(
                     "error" to "Database creation error: ${request.database}",
