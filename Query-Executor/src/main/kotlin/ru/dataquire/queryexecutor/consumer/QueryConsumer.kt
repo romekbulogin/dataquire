@@ -41,7 +41,6 @@ class QueryConsumer(
             null
         }
     }
-
     @RabbitListener(queues = ["\${spring.rabbitmq.consumer.request.queue}"], returnExceptions = "true")
     fun queryHandler(message: Message<String>): Any? {
         return try {
