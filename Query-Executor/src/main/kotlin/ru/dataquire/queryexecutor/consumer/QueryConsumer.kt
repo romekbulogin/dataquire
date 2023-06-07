@@ -58,7 +58,6 @@ class QueryConsumer(
             mapOf("error" to ex.message.toString())
         }
     }
-
     fun executeQuery(request: QueryRequest): Any? {
         try {
             logger.info("Request execute: $request")
