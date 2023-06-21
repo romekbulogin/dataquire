@@ -1,6 +1,7 @@
 package ru.dataquire.queryexecutor.consumer
 
 import mu.KotlinLogging
+import org.jooq.impl.DSL
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.messaging.Message
@@ -41,6 +42,7 @@ class QueryConsumer(
             null
         }
     }
+
     @RabbitListener(queues = ["\${spring.rabbitmq.consumer.request.queue}"], returnExceptions = "true")
     fun queryHandler(message: Message<String>): Any? {
         return try {
@@ -57,6 +59,7 @@ class QueryConsumer(
             mapOf("error" to ex.message.toString())
         }
     }
+
     fun executeQuery(request: QueryRequest): Any? {
         try {
             logger.info("Request execute: $request")
@@ -75,7 +78,7 @@ class QueryConsumer(
                 )
             ).use { connection ->
                 logger.debug("Current connection: $url")
-                val resultSet = connection.createStatement()?.executeQuery(request.sql)
+                val resultSet = DSL.using(connection).parsingConnection().createStatement().executeQuery(request.sql)
                 while (resultSet?.next() == true) {
                     for (i in 1..resultSet.metaData.columnCount) {
                         map[resultSet.metaData.getColumnName(i)] = resultSet.getObject(i)
@@ -92,6 +95,7 @@ class QueryConsumer(
             throw ex
         }
     }
+
     private fun getUserCredentials(username: String, database: String): UserCredentials? {
         return try {
             val userCredentials = UserCredentials()
