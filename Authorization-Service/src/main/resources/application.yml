@@ -11,7 +11,7 @@ spring:
           starttls:
             enable: true
   datasource:
-    url: jdbc:postgresql://185.124.64.2:5432/udbms_users
+    url: jdbc:postgresql://dataquire:5432/users
     username: postgres
     password: 1337
     driver-class-name: org.postgresql.Driver
@@ -34,9 +34,9 @@ secret:
 eureka:
   client:
     service-url:
-      defaultZone: "http://185.124.64.2:8761/eureka"
+      defaultZone: "http://dataquire-eureka-server:8761/eureka"
   instance:
-    ip-address: 85.193.90.72
+    ip-address: authorization-service
     prefer-ip-address: true
 
 logging:

@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://185.124.64.2:5432/udbms_users
+    url: jdbc:postgresql://dataquire:5432/users
     username: postgres
     password: 1337
     driver-class-name: org.postgresql.Driver
@@ -12,13 +12,13 @@ springdoc:
     url: /v3/api-docs
 feign:
   instance-keeper:
-    address: http://85.193.90.72:8084/
+    address: http://instance-keeper:8084/
 eureka:
   client:
     service-url:
-      defaultZone: "http://185.124.64.2:8761/eureka"
+      defaultZone: "http://dataquire-eureka-server:8761/eureka"
   instance:
-    ip-address: 85.193.90.72
+    ip-address: table-manager
     prefer-ip-address: true
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==

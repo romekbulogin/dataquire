@@ -25,7 +25,7 @@ jwt:
 eureka:
   client:
     service-url:
-      defaultZone: "http://185.124.64.2:8761/eureka"
+      defaultZone: "http://dataquire-eureka-server:8761/eureka"
   instance:
-    ip-address: 185.124.64.2
+    ip-address: dataquire-gateway
     prefer-ip-address: true

@@ -5,9 +5,9 @@ springdoc:
 eureka:
   client:
     service-url:
-      defaultZone: "http://185.124.64.2:8761/eureka"
+      defaultZone: "http://dataquire-eureka-server:8761/eureka"
   instance:
-    ip-address: 90.156.225.215
+    ip-address: query-executor
     prefer-ip-address: true
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
@@ -34,9 +34,9 @@ server:
   port: 8086
 feign:
   instance-keeper:
-    address: http://85.193.90.72:8084/
+    address: http://instance-keeper:8084/
 database:
-  url: "jdbc:postgresql://185.124.64.2:5432/udbms_users"
+  url: "jdbc:postgresql://dataquire:5432/users"
   username: "postgres"
   password: "1337"
 spring:
@@ -54,6 +54,6 @@ spring:
     ports:
       - "5672:5672"
       - "15672:15672"
-    addresses: 90.156.225.215
+    addresses: dataquire-rabbit
   application:
     name: query-executor

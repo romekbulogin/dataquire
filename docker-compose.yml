@@ -1,12 +1,33 @@
 version: '3'
 
 services:
+  dataquire:
+    image: postgres
+    container_name: dataquire
+    restart: always
+    environment:
+      - 'POSTGRES_USER=postgres'
+      - 'POSTGRES_PASSWORD=1337'
+      - 'POSTGRES_DB=users'
+
+  dataquire-rabbit:
+    image: rabbitmq:3.11.8-management
+    container_name: dataquire-rabbit
+    restart: always
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+      - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 2147483648
+    volumes:
+      - ./rabbitmq:/var/lib/rabbitmq
+
   dataquire-eureka-server:
     build:
       dockerfile: ./Dataquire-Eureka-Server/Dockerfile
       context: .
     image: dataquire-eureka-server
     container_name: 'dataquire-eureka-server'
+    restart: always
     ports:
       - "8761:8761"
 
@@ -16,6 +37,7 @@ services:
       context: .
     image: dataquire-gateway
     container_name: 'dataquire-gateway'
+    restart: always
     ports:
       - "8081:8081"
 
@@ -25,8 +47,9 @@ services:
       dockerfile: Authorization-Service/Dockerfile
     image: authorization-service
     container_name: 'authorization-service'
+    restart: always
     ports:
-      - "8080:8080"
+      - "587:587"
 
   instance-keeper:
     build:
@@ -34,8 +57,7 @@ services:
       dockerfile: Instance-Keeper/Dockerfile
     image: instance-keeper
     container_name: 'instance-keeper'
-    ports:
-      - "8084:8084"
+    restart: always
 
   database-manager:
     build:
@@ -43,29 +65,24 @@ services:
       context: .
     image: database-manager
     container_name: 'database-manager'
-    ports:
-      - "8085:8085"
+
   query-creator:
     build:
       dockerfile: ./Query-Creator/Dockerfile
       context: .
     image: query-creator
     container_name: 'query-creator'
-    ports:
-      - "8091:8091"
+
   query-executor:
     build:
       dockerfile: ./Query-Executor/Dockerfile
       context: .
     image: query-executor
     container_name: 'query-executor'
-    ports:
-      - "8086:8086"
+
   table-manager:
     build:
       dockerfile: ./Table-Manager/Dockerfile
       context: .
     image: table-manager
     container_name: 'table-manager'
-    ports:
-      - "8087:8087"

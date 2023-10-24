@@ -1,4 +1,4 @@
-FROM openjdk:19
+FROM bellsoft/liberica-openjdk-alpine:19.0.2
 EXPOSE 8086
 ADD ./Query-Executor/build/libs/Query-Executor-0.0.1.jar query-executor.jar
 CMD ["java","-jar","query-executor.jar"]

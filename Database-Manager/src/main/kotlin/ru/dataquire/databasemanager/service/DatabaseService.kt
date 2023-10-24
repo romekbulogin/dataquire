@@ -389,12 +389,17 @@ class DatabaseService(
 
     private fun createUser(instance: InstanceEntity): UserCredentials {
         return try {
-            DriverManager.getConnection(instance.url, instance.username, instance.password).use { connection ->
+            DriverManager.getConnection(
+                instance.url,
+                instance.username,
+                instance.password
+            ).use { connection ->
                 val password = RandomStringUtils.random(30, true, true).lowercase()
                 val login = RandomStringUtils.random(10, true, false).lowercase()
 
                 connection.createStatement().executeUpdate(
-                    convertCreateUserQuery(instance.dbms!!).replace("usertag", login)
+                    convertCreateUserQuery(instance.dbms!!)
+                        .replace("usertag", login)
                         .replace("passtag", password)
                 )
                 UserCredentials(login, password)
