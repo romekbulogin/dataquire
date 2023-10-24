@@ -1,15 +1,14 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.0.5"
+    id("org.springframework.boot") version "3.1.5"
     id("io.spring.dependency-management") version "1.1.0"
-    kotlin("jvm") version "1.7.22"
-    kotlin("plugin.spring") version "1.7.22"
+    kotlin("jvm") version "1.8.0"
+    kotlin("plugin.spring") version "1.8.0"
 }
 
 group = "ru.dataquire"
-version = "0.0.1"
-java.sourceCompatibility = JavaVersion.VERSION_18
+java.sourceCompatibility = JavaVersion.VERSION_19
 
 repositories {
     mavenCentral()
@@ -19,8 +18,11 @@ repositories {
 extra["springCloudVersion"] = "2022.0.2"
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    //Spring Cloud
     implementation("org.springframework.cloud:spring-cloud-starter-netflix-eureka-server")
+    //Kotlin
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    //Test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
@@ -33,7 +35,7 @@ dependencyManagement {
 tasks.withType<KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs = listOf("-Xjsr305=strict")
-        jvmTarget = "18"
+        jvmTarget = "19"
     }
 }
 

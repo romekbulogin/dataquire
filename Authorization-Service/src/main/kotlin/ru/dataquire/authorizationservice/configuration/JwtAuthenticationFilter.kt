@@ -3,7 +3,6 @@ package ru.dataquire.authorizationservice.configuration
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import mu.KotlinLogging
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetailsService
@@ -15,29 +14,26 @@ import ru.dataquire.authorizationservice.service.JwtService
 @Component
 class JwtAuthenticationFilter(private val jwtService: JwtService, private val userDetailsService: UserDetailsService) :
     OncePerRequestFilter() {
-
-    private val logger = KotlinLogging.logger { }
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+        val authenticationHeader: String? = request.getHeader("Authorization")
 
-        val authHeader: String? = request.getHeader("Authorization")
-        if (authHeader == null) {
+        require(authenticationHeader != null) {
             filterChain.doFilter(request, response);
             return
         }
-        if (authHeader == "" || !authHeader.startsWith("Bearer ")) {
+        require(authenticationHeader.isNotEmpty() || authenticationHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return
         }
 
-        val jwt = authHeader.substring(7)
-        logger.debug(request.headerNames)
+        val jwt = authenticationHeader.substring(7)
         val userEmail = jwtService.extractUsername(jwt)
 
-        if (userEmail != null && SecurityContextHolder.getContext().authentication == null) {
+        if (SecurityContextHolder.getContext().authentication == null) {
             val userDetails = this.userDetailsService.loadUserByUsername(userEmail)
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 val authToken = UsernamePasswordAuthenticationToken(userEmail, null, userDetails.authorities)

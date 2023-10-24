@@ -39,7 +39,7 @@ services:
     container_name: 'dataquire-gateway'
     restart: always
     ports:
-      - "8081:8081"
+      - "80:8081"
 
   authorization-service:
     build:
