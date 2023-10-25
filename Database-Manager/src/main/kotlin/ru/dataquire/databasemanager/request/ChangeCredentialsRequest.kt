@@ -1,7 +1,7 @@
 package ru.dataquire.databasemanager.request
 
 data class ChangeCredentialsRequest(
-    var database: String? = null,
-    var systemName: String? = null,
-    var dbms: String? = null
+    var database: String,
+    var systemName: String,
+    var dbms: String
 )

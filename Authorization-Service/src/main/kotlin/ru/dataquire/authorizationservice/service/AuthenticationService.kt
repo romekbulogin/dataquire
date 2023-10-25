@@ -6,7 +6,9 @@ import jakarta.mail.internet.InternetAddress
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -16,7 +18,9 @@ import ru.dataquire.authorizationservice.entity.OwnerEntity
 import ru.dataquire.authorizationservice.repository.OwnerRepository
 import ru.dataquire.authorizationservice.request.AuthenticationRequest
 import ru.dataquire.authorizationservice.request.RegistrationRequest
+import java.net.URI
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class AuthenticationService(
@@ -31,7 +35,7 @@ class AuthenticationService(
     @Value("\${dataquire.address}")
     private val address: String? = null
 
-    fun registration(request: RegistrationRequest): Map<String, Any> = try {
+    fun registration(request: RegistrationRequest) = try {
         logger.info("Registration: $request")
 
         with(request) {
@@ -59,21 +63,25 @@ class AuthenticationService(
             "$address/email/verify/${user.getActivatedUUID()}"
         )
 
-        mapOf(
-            "token" to jwtService.generateToken(user),
-            "user" to mapOf(
-                "username" to user.getNickname(),
-                "email" to user.getEmail(),
-                "isActivated" to user.getIsActivated(),
-                "role" to user.getRole()
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
             )
         )
     } catch (ex: Exception) {
         logger.error(ex.message)
-        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to create account")
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
-    fun authentication(request: AuthenticationRequest): Map<String, Any> = try {
+    fun authentication(request: AuthenticationRequest) = try {
         logger.info("Authentication: $request")
         with(request) {
             require(
@@ -85,20 +93,24 @@ class AuthenticationService(
             }
         }
         authenticationManager.authenticate(UsernamePasswordAuthenticationToken(request.email, request.password))
-        val user = ownerRepository.findByEmail(request.email).orElseThrow()
+        val user = ownerRepository.findByEmail(request.email).get()
 
-        mapOf(
-            "token" to jwtService.generateToken(user),
-            "user" to mapOf(
-                "username" to user.getNickname(),
-                "email" to user.getEmail(),
-                "isActivated" to user.getIsActivated(),
-                "role" to user.getRole()
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
             )
         )
     } catch (ex: Exception) {
         logger.error(ex.message)
-        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "User is not found", ex)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
     fun refresh(token: String) = try {
@@ -108,19 +120,27 @@ class AuthenticationService(
             JwtException("Token is empty")
         }
 
-        val user = ownerRepository.findByEmail(jwtService.extractUsername(token.substring(7))).orElseThrow()
-        mapOf(
-            "token" to jwtService.generateToken(user),
-            "user" to mapOf(
-                "username" to user.getNickname(),
-                "email" to user.getEmail(),
-                "isActivated" to user.getIsActivated(),
-                "role" to user.getRole()
+        val user = ownerRepository.findByEmail(
+            jwtService.extractUsername(
+                token.substring(7)
+            )
+        ).get()
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
             )
         )
     } catch (ex: Exception) {
         logger.error(ex.message)
-        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Failed to update account")
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
     fun verify(uuid: String) = try {
@@ -133,10 +153,14 @@ class AuthenticationService(
             setRole(Role.USER)
         }
         ownerRepository.save(user)
-        mapOf("status" to "Verify success")
+        ResponseEntity.ok().body(
+            mapOf("status" to "Verify success")
+        )
     } catch (ex: Exception) {
         logger.error(ex.message)
-        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Verify failed")
+        ResponseEntity.badRequest().body(
+            mapOf("error" to "Verify failed")
+        )
     }
 
     fun repeatVerify(token: String) = try {
@@ -154,10 +178,14 @@ class AuthenticationService(
             "Verify your email",
             "$address/email/verify/${uuid}"
         )
-        mapOf("status" to "Message delivered successfully")
+        ResponseEntity.ok().body(
+            mapOf("status" to "Message delivered successfully")
+        )
     } catch (ex: Exception) {
         logger.error(ex.message)
-        throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Error sending message")
+        ResponseEntity.badRequest().body(
+            mapOf("error" to "Error sending message")
+        )
     }
 
     fun isValidEmailAddress(email: String): Boolean {

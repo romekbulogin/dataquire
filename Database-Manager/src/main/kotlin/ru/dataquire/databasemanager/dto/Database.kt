@@ -1,10 +1,10 @@
 package ru.dataquire.databasemanager.dto
 
 data class Database(
-    var dbms: String? = null,
-    var systemName: String? = null,
-    var databaseName: String? = null,
-    var login: String? = null,
-    var url: String? = null,
-    var passwordDbms: String? = null,
+    var dbms: String,
+    var systemName: String,
+    var databaseName: String,
+    var login: String,
+    var url: String,
+    var passwordDbms: String,
 )

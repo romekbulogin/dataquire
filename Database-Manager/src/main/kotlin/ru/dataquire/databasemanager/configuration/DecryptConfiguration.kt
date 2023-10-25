@@ -5,9 +5,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import java.nio.charset.Charset
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.KeyFactory
 import java.security.PublicKey
@@ -17,17 +15,16 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 
 @Configuration
 class DecryptConfiguration {
     private val logger = KotlinLogging.logger { }
 
     @Value("\${secret.rsa.public}")
-    private val publicKey: String? = null
+    private val publicKeyPath: String? = null
 
     @Value("\${secret.rsa.private}")
-    private val privateKey: String? = null
+    private val privateKeyPath: String? = null
 
     @Bean
     fun encryptCipher(): Cipher = Cipher.getInstance("RSA").apply {
@@ -40,14 +37,18 @@ class DecryptConfiguration {
     }
 
     private fun getPublicKey(): PublicKey {
-        logger.info("PUBLIC KEY: $publicKey")
+        logger.info("PUBLIC KEY: $publicKeyPath")
 
-        val publicKeyResult = publicKey
-            ?.replace("-----BEGIN PUBLIC KEY-----", "")
-            ?.replace("\n", "")
-            ?.replace("-----END PUBLIC KEY-----", "")
+        val keyBytes = Files.readAllBytes(
+            Paths.get(publicKeyPath.toString())
+        )
+        val publicKey = String(keyBytes)
+            .replace("-----BEGIN PUBLIC KEY-----", "")
+            .replace("\n", "")
+            .replace("\r", "")
+            .replace("-----END PUBLIC KEY-----", "")
+        val encoded: ByteArray = Base64.getDecoder().decode(publicKey)
 
-        val encoded: ByteArray = Base64.getDecoder().decode(publicKeyResult)
 
         val keyFactory = KeyFactory.getInstance("RSA")
         val keySpec = X509EncodedKeySpec(encoded)
@@ -55,17 +56,21 @@ class DecryptConfiguration {
     }
 
     private fun getPrivateKey(): RSAPrivateKey {
-        logger.info("PRIVATE KEY: $privateKey")
+        logger.info("PRIVATE KEY: $privateKeyPath")
         Security.addProvider(
             BouncyCastleProvider()
         )
 
-        val privateKeyResult = privateKey
-            ?.replace("-----BEGIN RSA PRIVATE KEY-----", "")
-            ?.replace("\n", "")
-            ?.replace("-----END RSA PRIVATE KEY-----", "")
+        val keyBytes = Files.readAllBytes(
+            Paths.get(privateKeyPath.toString())
+        )
+        val privateKey = String(keyBytes)
+            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+            .replace("\n", "")
+            .replace("\r", "")
+            .replace("-----END RSA PRIVATE KEY-----", "")
 
-        val encoded: ByteArray = Base64.getDecoder().decode(privateKeyResult)
+        val encoded: ByteArray = Base64.getDecoder().decode(privateKey)
 
         val keyFactory = KeyFactory.getInstance("RSA")
         val keySpec = PKCS8EncodedKeySpec(encoded)

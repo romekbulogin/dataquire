@@ -6,7 +6,7 @@ Configuration:
       - name: app-name
         value: "authorization-service"
       - name: log-path
-        value: "logs/authorization-service"
+        value: "${app-name}/logs/${app-name}"
       - name: log-archive-path
         value: ${log-path}/archive
       - name: log-file-pattern

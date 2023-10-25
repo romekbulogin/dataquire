@@ -1,53 +1,56 @@
 Configuration:
   status: warn
-
+  name: instance-keeper
   Properties:
-    property:
+    Property:
+      - name: app-name
+        value: "instance-keeper"
       - name: log-path
-        value: "/logs"
-      - name: log-archive
-        value: "${log-path}/archive"
-      - name: log-pattern
+        value: "${app-name}/logs/${app-name}"
+      - name: log-archive-path
+        value: ${log-path}/archive
+      - name: log-file-pattern
         value: "[%date{ISO8601}][%-5level][%thread][%class.%method] %message%n"
+      - name: log-console-pattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{[%-5level][%t][%class.%method]}{FATAL=magenta, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue}: %msg%n%throwable"
+      - name: log-file-extension-pattern
+        value: "%d{yyyy-MM-dd}-%i"
 
   Appenders:
     RollingFile:
-      - name: ALL_LOG
-        fileName: ${log-path}/all.log
-        filePattern: "${log-archive}/all.log.%d{yyyy-MM-dd}-%i"
+      - name: FILE_LOG
+        fileName: ${log-path}.log
+        filePattern: "${log-archive-path}/${app-name}.log.${log-file-extension-pattern}"
         PatternLayout:
-          pattern: "${log-pattern}"
+          pattern: "${log-file-pattern}"
+          disableAnsi: false
+        DefaultRollOverStrategy:
+          delete:
+            basePath: "${log-archive-path}"
+            maxDepth: 14
+            IfLastModified:
+              age: 14d
         Policies:
           TimeBasedTriggeringPolicy: { }
           SizeBasedTriggeringPolicy:
-            size: 250 MB
-
-      - name: APP_LOG
-        fileName: ${log-path}/app.log
-        filePattern: "${log-archive}/app.log.%d{yyyy-MM-dd}-%i"
-        PatternLayout:
-          pattern: "${log-pattern}"
-        Policies:
-          TimeBasedTriggeringPolicy: { }
-          SizeBasedTriggeringPolicy:
-            size: 250 MB
-
+            size: 100 MB
 
     Console:
       name: CONSOLE_LOG
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint} %clr{%5p} %clr{${sys:PID}}{magenta} %clr{%-40.40c{1.}}{cyan} %clr{:}{faint} %m%n%xwEx"
+        pattern: "${log-console-pattern}"
+        disableAnsi: false
 
   Loggers:
-    Logger:
-      - name: ru.edu
-        level: debug
-        AppenderRef:
-          - ref: APP_LOG
-            level: debug
     Root:
       level: info
       AppenderRef:
-        - ref: ALL_LOG
         - ref: CONSOLE_LOG
+        - ref: FILE_LOG
+
+    Logger:
+      - name: ru.dataquire
+        level: info
+        AppenderRef:
+          - ref: FILE_LOG
