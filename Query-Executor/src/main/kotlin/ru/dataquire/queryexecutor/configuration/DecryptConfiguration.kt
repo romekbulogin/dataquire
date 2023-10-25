@@ -5,6 +5,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.security.KeyFactory
 import java.security.Security
 import java.security.interfaces.RSAPrivateKey
@@ -17,7 +19,7 @@ class DecryptConfiguration {
     private val logger = KotlinLogging.logger { }
 
     @Value("\${secret.rsa.private}")
-    private val privateKey: String? = null
+    private val privateKeyPath: String? = null
 
     @Bean
     fun decryptCipher(): Cipher = Cipher.getInstance("RSA").apply {
@@ -25,17 +27,21 @@ class DecryptConfiguration {
     }
 
     private fun getPrivateKey(): RSAPrivateKey {
-        logger.info("PRIVATE KEY: $privateKey")
+        logger.info("PRIVATE KEY: $privateKeyPath")
         Security.addProvider(
             BouncyCastleProvider()
         )
 
-        val privateKeyResult = privateKey
-            ?.replace("-----BEGIN RSA PRIVATE KEY-----", "")
-            ?.replace("\n", "")
-            ?.replace("-----END RSA PRIVATE KEY-----", "")
+        val keyBytes = Files.readAllBytes(
+            Paths.get(privateKeyPath.toString())
+        )
+        val privateKey = String(keyBytes)
+            .replace("-----BEGIN RSA PRIVATE KEY-----", "")
+            .replace("\n", "")
+            .replace("\r", "")
+            .replace("-----END RSA PRIVATE KEY-----", "")
 
-        val encoded: ByteArray = Base64.getDecoder().decode(privateKeyResult)
+        val encoded: ByteArray = Base64.getDecoder().decode(privateKey)
 
         val keyFactory = KeyFactory.getInstance("RSA")
         val keySpec = PKCS8EncodedKeySpec(encoded)

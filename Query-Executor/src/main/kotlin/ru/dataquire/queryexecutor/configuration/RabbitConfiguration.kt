@@ -26,5 +26,7 @@ class RabbitConfiguration {
     fun exchange() = DirectExchange(exchange)
 
     @Bean
-    fun bindingRequest(): Binding? = BindingBuilder.bind(queueExecutor()).to(exchange()).with(routingKeyRequest)
+    fun bindingRequest(): Binding? = BindingBuilder.bind(queueExecutor())
+        .to(exchange())
+        .with(routingKeyRequest)
 }

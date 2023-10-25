@@ -5,38 +5,33 @@ springdoc:
 eureka:
   client:
     service-url:
-      defaultZone: "http://dataquire-eureka-server:8761/eureka"
+      defaultZone: "http://localhost:8761/eureka"
   instance:
     ip-address: query-executor
     prefer-ip-address: true
 secret:
   key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
   rsa:
-    private: |
-      -----BEGIN RSA PRIVATE KEY-----
-      MIICXQIBAAKBgQDDiRRjRBbehnt57I29IA3D0EFAeaRhFMWKDOh7sE83TbUQgrHs
-      ADXzvupEOFg5AvRWAjPNDyPifiQ41J/onuMejETM3aA39abe1/AjmnrhYoDMBCub
-      pERwDzI5K0U8JCEmMOg6hnT0J1+G0pIlTZdjVpx0auZrLVWGSQAimw1YwQIDAQAB
-      AoGBAKkIQVWmsNZhDzDRK55IrV2PFDl2boF2AWZbzkXOnkxCornJIaHQdNNnQQEE
-      bE+snCgV803bPrw3K3ztYecoI1DsJzEHgX93rrHpZcjjJCigl97aZVtJ2JluenfH
-      7FlHWKAgcuCuCTCytW6nq5fVRbYid6buJBesrK8LHqZIOSeZAkEA5QcqxMPOGF6M
-      BGvxFCxYTi8G5ds7XSwfZCcQvKocDvjETzc+vJo3vVFHDHEvINeBHWuKjKwGJu6U
-      Fd2C+2stewJBANqQKmddojmLMUUwaUAb9rUnfKWg9EbAh6fDdGgwWmI8yC3cwVS9
-      j2r+tTMnXw7WjUyIKZmjqX9NPHgi85p3d/MCQAw2uKIrqwcDq8Xkl8OypbbtrRl+
-      +oh6fOYTa0IUdFCcFaP/1zmpo8VV20sfkhrXQ0x1WrsrxVw4Ju+Pk5ei3JcCQQCW
-      eFApL6Zi1XhLOQQM9fOITjIbWU8zcpMyJXb7z+Y54byzDlsvev3E3KxlFkL0VTOc
-      L9XsB2fG06bA0tdBTeSPAkB3tE/NEO/oU1d5ywxvPV6QR77ZB6mVb2u7xAHs6BVu
-      XoPzKxfwLbgh9Y01YFfQENG4L2+vNlqjW3GemNcdk+nS
-      -----END RSA PRIVATE KEY-----
+    private: C:\Users\Roman\IdeaProjects\dataquire\Query-Executor\src\main\resources\dataquire-private.pem
 logging:
   config: 'classpath:log4j2.yml'
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    info:
+      enabled: true
+    gateway:
+      enabled: true
 server:
   port: 8086
 feign:
   instance-keeper:
     address: http://instance-keeper:8084/
 database:
-  url: "jdbc:postgresql://dataquire:5432/users"
+  url: "jdbc:postgresql://localhost:5432/users"
   username: "postgres"
   password: "1337"
 spring:
