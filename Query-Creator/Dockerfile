@@ -1,4 +1,6 @@
 FROM bellsoft/liberica-openjdk-alpine:19.0.2
 EXPOSE 8091
-ADD ./Query-Creator/build/libs/Query-Creator-0.0.1.jar query-creator.jar
-CMD ["java","-jar","query-creator.jar"]
+WORKDIR "/query-creator"
+VOLUME "/query-creator/config"
+ADD ./build/libs/Query-Creator.jar query-creator.jar
+CMD ["java","-jar","query-creator.jar","--spring.config.location=file:./config/application.yml"]

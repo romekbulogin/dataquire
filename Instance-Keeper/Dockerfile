@@ -1,4 +1,6 @@
 FROM bellsoft/liberica-openjdk-alpine:19.0.2
 EXPOSE 8084
-ADD ./Instance-Keeper/build/libs/Instance-Keeper-0.0.1.jar instance-keeper.jar
-CMD ["java","-jar","instance-keeper.jar"]
+WORKDIR "/instance-keeper"
+VOLUME "/instance-keeper/config"
+COPY ./build/libs/Instance-Keeper.jar instance-keeper.jar
+ENTRYPOINT ["java","-jar","instance-keeper.jar","--spring.config.location=file:./config/application.yml"]

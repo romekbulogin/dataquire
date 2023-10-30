@@ -16,31 +16,31 @@ import javax.crypto.Cipher
 
 @Service
 class QueryConsumer(
-    private val mainDatabaseInstance: DriverManagerDataSource,
+    private val dataQuireUserDatabase: DriverManagerDataSource,
     private val decryptCipher: Cipher
 ) {
     private val logger = KotlinLogging.logger { }
-    fun findTargetUrl(dbms: String, email: String, database: String): String? {
-        return try {
-            var url: String? = null
-            val connection = mainDatabaseInstance.connection
-            val statement =
-                connection.prepareStatement("select url from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
-            statement.setString(1, email)
-            statement.setString(2, database)
-            val resultSet = statement.executeQuery()
-            while (resultSet?.next() == true) {
-                for (i in 1..resultSet.metaData.columnCount) {
-                    url = resultSet.getString("url")
-                }
+    fun findTargetUrl(dbms: String, email: String, database: String) = try {
+        var url: String? = null
+        val connection = dataQuireUserDatabase.connection
+        val statement =
+            connection.prepareStatement(
+                "select url from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?"
+            )
+        statement.setString(1, email)
+        statement.setString(2, database)
+        val resultSet = statement.executeQuery()
+        while (resultSet?.next() == true) {
+            for (i in 1..resultSet.metaData.columnCount) {
+                url = resultSet.getString("url")
             }
-            resultSet.close()
-            connection.close()
-            url
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            null
         }
+        resultSet.close()
+        connection.close()
+        url
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        null
     }
 
     @RabbitListener(queues = ["\${spring.rabbitmq.consumer.request.queue}"], returnExceptions = "true")
@@ -99,9 +99,11 @@ class QueryConsumer(
     private fun getUserCredentials(username: String, database: String): UserCredentials? {
         return try {
             val userCredentials = UserCredentials()
-            mainDatabaseInstance.connection.use { connection ->
+            dataQuireUserDatabase.connection.use { connection ->
                 val statement =
-                    connection.prepareStatement("select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?")
+                    connection.prepareStatement(
+                        "select login,password_dbms from _databases inner join _user u on u.id = _databases.user_entity_id where email = ? and system_name = ?"
+                    )
                 statement.setString(1, username)
                 statement.setString(2, database)
                 val resultSet = statement.executeQuery()

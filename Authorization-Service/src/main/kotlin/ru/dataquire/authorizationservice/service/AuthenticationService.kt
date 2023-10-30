@@ -1,27 +1,30 @@
 package ru.dataquire.authorizationservice.service
 
+import io.jsonwebtoken.JwtException
 import jakarta.mail.internet.AddressException
 import jakarta.mail.internet.InternetAddress
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.BadCredentialsException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import org.springframework.web.server.ResponseStatusException
 import ru.dataquire.authorizationservice.entity.Role
-import ru.dataquire.authorizationservice.entity.UserEntity
-import ru.dataquire.authorizationservice.repository.UserRepository
+import ru.dataquire.authorizationservice.entity.OwnerEntity
+import ru.dataquire.authorizationservice.repository.OwnerRepository
 import ru.dataquire.authorizationservice.request.AuthenticationRequest
 import ru.dataquire.authorizationservice.request.RegistrationRequest
-import ru.dataquire.authorizationservice.response.AuthenticationResponse
-import ru.dataquire.authorizationservice.response.UserResponse
+import java.net.URI
 import java.util.*
-
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class AuthenticationService(
-    private val userRepository: UserRepository,
+    private val ownerRepository: OwnerRepository,
     private val passwordEncoder: PasswordEncoder,
     private val jwtService: JwtService,
     private val authenticationManager: AuthenticationManager,
@@ -29,134 +32,165 @@ class AuthenticationService(
 ) {
     private val logger = KotlinLogging.logger { }
 
-    fun registration(request: RegistrationRequest): Any {
-        try {
-            if (request.email.isNotEmpty() && request.username.isNotEmpty() && request.password.isNotEmpty() && isValidEmailAddress(
-                    request.email
-                )
+    @Value("\${dataquire.address}")
+    private val address: String? = null
+
+    fun registration(request: RegistrationRequest) = try {
+        logger.info("Registration: $request")
+
+        with(request) {
+            require(
+                username.isNotEmpty() &&
+                        password.isNotEmpty() &&
+                        isValidEmailAddress(email)
             ) {
-                logger.info("[Request] Registration: $request")
-
-                val user = UserEntity().apply {
-                    setUsername(request.username)
-                    setEmail(request.email)
-                    setPassword(passwordEncoder.encode(request.password))
-                    setIsActivated(false)
-                    setRole(Role.INACTIVE_USER)
-                    setActivatedUUID(UUID.randomUUID().toString())
-                }
-                userRepository.save(user)
-                mailService.sendMessageVerify(
-                    request.email,
-                    "Verify your email",
-                    "http://api.dataquire.ru:8081/api/auth/verify/${user.getActivatedUUID()}"
-                )
-                return AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
-                    this.username = user.getNickname().toString()
-                    this.email = user.getEmail()!!
-                    this.isActivated = user.getIsActivated()!!
-                    this.role = user.getRole()
-                })
-            } else {
-                return ResponseEntity.badRequest()
+                AddressException("Email is not valid")
             }
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            return ResponseEntity(mapOf("response" to "Не удалось создать учетную запись"), HttpStatus.BAD_REQUEST)
-        } catch (ex: AddressException) {
-            logger.error(ex.message)
-            return ResponseEntity(
-                mapOf("response" to "Ошибка адреса электронной почты"),
-                HttpStatus.BAD_REQUEST
-            )
         }
+
+        val user = OwnerEntity().apply {
+            setUsername(request.username)
+            setEmail(request.email)
+            setPassword(passwordEncoder.encode(request.password))
+            setIsActivated(false)
+            setRole(Role.INACTIVE_USER)
+            setActivatedUUID(UUID.randomUUID().toString())
+        }
+        ownerRepository.save(user)
+        mailService.sendMessageVerify(
+            request.email,
+            "Verify your email",
+            "$address/email/verify/${user.getActivatedUUID()}"
+        )
+
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
+            )
+        )
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
-    fun authentication(request: AuthenticationRequest): Any {
-        try {
-            return if (request.email.isNotEmpty() && request.password.isNotEmpty() && isValidEmailAddress(
-                    request.email
-                )
+    fun authentication(request: AuthenticationRequest) = try {
+        logger.info("Authentication: $request")
+        with(request) {
+            require(
+                email.isNotEmpty() &&
+                        password.isNotEmpty() &&
+                        isValidEmailAddress(email)
             ) {
-                logger.info("[Request] Authentication: $request")
-                authenticationManager.authenticate(UsernamePasswordAuthenticationToken(request.email, request.password))
-                val user = userRepository.findByEmail(request.email).orElseThrow()
-                AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
-                    this.username = user.getNickname().toString()
-                    this.email = user.getEmail()!!
-                    this.isActivated = user.getIsActivated()!!
-                    this.role = user.getRole()
-                })
-            } else {
-                ResponseEntity(mapOf("response" to "Введены неверные параметры авторизации"), HttpStatus.BAD_REQUEST)
+                throw AddressException("Email is not valid")
             }
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            return ResponseEntity(
-                mapOf("response" to "Не удалось найти пользоватля с ${request.email}"),
-                HttpStatus.BAD_REQUEST
+        }
+        authenticationManager.authenticate(UsernamePasswordAuthenticationToken(request.email, request.password))
+        val user = ownerRepository.findByEmail(request.email).get()
+
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
             )
-        }
+        )
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
-    fun refresh(token: String): Any {
-        try {
-            return if (token.isNotEmpty()) {
-                logger.info("[Request] Refresh: $token")
-                val user = userRepository.findByEmail(jwtService.extractUsername(token.substring(7))).orElseThrow()
-                AuthenticationResponse(jwtService.generateToken(user), UserResponse().apply {
-                    this.username = user.getNickname().toString()
-                    this.email = user.getEmail()!!
-                    this.isActivated = user.getIsActivated()!!
-                    this.role = user.getRole()
-                })
-            } else {
-                ResponseEntity.badRequest()
-            }
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            return ResponseEntity.badRequest()
-        }
-    }
+    fun refresh(token: String) = try {
+        logger.info("Refresh: $token")
 
-    fun verify(uuid: String): ResponseEntity<Map<String, String>> {
-        return try {
-            logger.debug("Verify by UUID: $uuid")
-            val user = userRepository.findByActivatedUUID(uuid)
-            user.setIsActivated(true)
-            user.setRole(Role.USER)
-            userRepository.save(user)
-            ResponseEntity(mapOf("verify" to "success"), HttpStatus.OK)
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            ResponseEntity(mapOf("verify" to "failed"), HttpStatus.BAD_REQUEST)
+        require(token.isNotEmpty()) {
+            JwtException("Token is empty")
         }
-    }
 
-    fun repeatVerify(token: String): Map<String, String> {
-        return try {
-            val uuid = UUID.randomUUID().toString()
-            val currentUser = userRepository.findByEmail(jwtService.extractUsername(token.substring(7))).get()
-            currentUser.setActivatedUUID(uuid)
-            mailService.sendMessageVerify(
-                currentUser.getEmail().toString(),
-                "Verify your email",
-                "http://api.dataquire.ru:8081/api/auth/verify/${uuid}"
+        val user = ownerRepository.findByEmail(
+            jwtService.extractUsername(
+                token.substring(7)
             )
-            mapOf("status" to "send message verify")
-        } catch (ex: Exception) {
-            logger.error(ex.message)
-            mapOf("status" to "error sending")
-        }
+        ).get()
+        ResponseEntity.ok().body(
+            mapOf(
+                "token" to jwtService.generateToken(user),
+                "user" to mapOf(
+                    "username" to user.getNickname(),
+                    "email" to user.getEmail(),
+                    "isActivated" to user.getIsActivated(),
+                    "role" to user.getRole()
+                )
+            )
+        )
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to ex.message)
+        )
     }
 
-    fun isValidEmailAddress(email: String?): Boolean {
-        try {
-            val emailAddr = InternetAddress(email)
-            emailAddr.validate()
-            return true
-        } catch (ex: AddressException) {
-            throw AddressException("Email is not valid")
+    fun verify(uuid: String) = try {
+        logger.debug("Verify by UUID: $uuid")
+
+        val user = ownerRepository.findByActivatedUUID(uuid)
+
+        with(user) {
+            setIsActivated(true)
+            setRole(Role.USER)
         }
+        ownerRepository.save(user)
+        ResponseEntity.ok().body(
+            mapOf("status" to "Verify success")
+        )
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to "Verify failed")
+        )
+    }
+
+    fun repeatVerify(token: String) = try {
+        val uuid = UUID.randomUUID().toString()
+
+        val currentUser = ownerRepository.findByEmail(
+            jwtService.extractUsername(
+                token.substring(7)
+            )
+        ).get()
+        currentUser.setActivatedUUID(uuid)
+
+        mailService.sendMessageVerify(
+            currentUser.getEmail().toString(),
+            "Verify your email",
+            "$address/email/verify/${uuid}"
+        )
+        ResponseEntity.ok().body(
+            mapOf("status" to "Message delivered successfully")
+        )
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity.badRequest().body(
+            mapOf("error" to "Error sending message")
+        )
+    }
+
+    fun isValidEmailAddress(email: String): Boolean {
+        val emailAddr = InternetAddress(email)
+        emailAddr.validate()
+        return true
     }
 }

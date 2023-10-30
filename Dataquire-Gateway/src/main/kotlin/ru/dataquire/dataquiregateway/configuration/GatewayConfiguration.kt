@@ -8,7 +8,9 @@ import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.web.server.SecurityWebFilterChain
 
 @Configuration
-class GatewayConfiguration(private val authenticationFilter: AuthenticationFilter) {
+class GatewayConfiguration(
+    private val authenticationFilter: AuthenticationFilter
+) {
     @Bean
     fun routes(builder: RouteLocatorBuilder): RouteLocator? {
         return builder.routes()

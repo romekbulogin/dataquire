@@ -18,10 +18,18 @@ spring:
         locator:
           enabled: true
           lower-case-service-id: true
-
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    info:
+      enabled: true
+    gateway:
+      enabled: true
 jwt:
   secret: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
-
 eureka:
   client:
     service-url:

@@ -39,7 +39,7 @@ class JwtService {
     fun generateToken(extraClaims: Map<String, Any>, userDetails: UserDetails): String =
         Jwts.builder().addClaims(extraClaims).setSubject(userDetails.username)
             .setIssuedAt(Date(System.currentTimeMillis()))
-            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 24))
+            .setExpiration(Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
             .signWith(getSingInKey(), SignatureAlgorithm.HS256)
             .compact()
 

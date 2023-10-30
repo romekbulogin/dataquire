@@ -9,18 +9,16 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-import org.springframework.web.servlet.config.annotation.CorsRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
-import ru.dataquire.authorizationservice.repository.UserRepository
+import ru.dataquire.authorizationservice.repository.OwnerRepository
 
 
 @Configuration
-class ApplicationConfiguration(private val userRepository: UserRepository) {
+class ApplicationConfiguration(private val ownerRepository: OwnerRepository) {
 
     @Bean
     fun userDetailsService(): UserDetailsService? {
         return UserDetailsService { username: String ->
-            userRepository.findByEmail(username)
+            ownerRepository.findByEmail(username)
                 .orElseThrow { UsernameNotFoundException("User not found") }
         }
     }

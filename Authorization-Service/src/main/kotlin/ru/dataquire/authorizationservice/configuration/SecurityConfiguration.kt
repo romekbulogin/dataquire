@@ -20,23 +20,26 @@ class SecurityConfiguration(
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .csrf()
-            .disable()
-            .authorizeHttpRequests()
-            .requestMatchers(
-                "/api/auth/**",
-                "/swagger-ui.html",
-                "/swagger-ui/**",
-                "/v3/api-docs",
-                "/api/auth/verify/**"
-            )
-            .permitAll()
-            .anyRequest()
-            .authenticated()
-            .and()
-            .sessionManagement()
-            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
+            .csrf { csrf -> csrf.disable() }
+            .cors { cors -> cors.disable() }
+            .authorizeHttpRequests { authorize ->
+                authorize.requestMatchers(
+                    "/api/auth/**",
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs",
+                    "/actuator/**"
+                )
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated()
+            }
+            .sessionManagement { sessionManagement ->
+                sessionManagement
+                    .sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS
+                    )
+            }
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
         return http.build()

@@ -14,17 +14,12 @@ import java.util.function.Function
 class JwtService {
     @Value("\${secret.key}")
     private val secretKey = ""
-
     fun extractUsername(token: String): String = extractClaim(token, Claims::getSubject)
-
     fun <T> extractClaim(token: String, claimsResolver: Function<Claims, T>): T =
         claimsResolver.apply(extractAllClaims(token))
 
     fun getSingInKey(): Key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey))
-
-
     private fun extractExpiration(token: String): Date = extractClaim(token, Claims::getExpiration)
-
     private fun extractAllClaims(token: String): Claims =
         Jwts
             .parserBuilder()

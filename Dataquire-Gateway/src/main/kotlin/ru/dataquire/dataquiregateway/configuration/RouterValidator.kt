@@ -11,7 +11,8 @@ class RouterValidator {
         "/api/auth/registration",
         "/api/auth/verify",
         "/v3/api-docs",
-        "/swagger-ui/**"
+        "/swagger-ui/**",
+        "/actuator/**"
     )
 
     var isSecured: Predicate<ServerHttpRequest> = Predicate<ServerHttpRequest> { request ->

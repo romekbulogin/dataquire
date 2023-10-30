@@ -1,33 +1,43 @@
 package ru.dataquire.authorizationservice.entity
 
 import jakarta.persistence.*
+import org.hibernate.annotations.CreationTimestamp
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
-import ru.dataquire.authorizationservice.entity.DatabaseEntity
-import ru.dataquire.authorizationservice.entity.Role
+import java.sql.Date
 import java.util.UUID
 
 @Entity
-@Table(name = "_user")
-class UserEntity : UserDetails {
+@Table(name = "owner")
+class OwnerEntity : UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private var id: UUID? = null
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private var username: String? = null
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private var email: String? = null
+
+    @Column(nullable = false)
     private var password: String? = null
+
+    @Column(nullable = false)
     private var isActivated: Boolean? = null
+
+    @Column(nullable = false)
     private var activatedUUID: String? = null
 
+    @CreationTimestamp
+    private var registrationDate: Date? = null
+
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private var role: Role? = null
 
-    @OneToMany
+    @OneToMany(mappedBy = "ownerEntity")
     private var databases: MutableList<DatabaseEntity>? = null
 
     fun setActivatedUUID(uuid: String) {

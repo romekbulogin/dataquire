@@ -17,7 +17,7 @@ class DatabaseConfiguration {
     private val passwordDatabase: String? = null
 
     @Bean
-    fun mainDatabaseInstance() = DriverManagerDataSource().apply {
+    fun dataQuireUserDatabase() = DriverManagerDataSource().apply {
         url = urlDatabase
         username = usernameDatabase
         password = passwordDatabase

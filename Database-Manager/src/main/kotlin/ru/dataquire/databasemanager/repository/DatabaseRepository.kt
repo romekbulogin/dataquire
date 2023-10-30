@@ -6,37 +6,44 @@ import ru.dataquire.databasemanager.dto.Database
 import ru.dataquire.databasemanager.dto.DatabaseForList
 import ru.dataquire.databasemanager.dto.DatabaseInDBMS
 import ru.dataquire.databasemanager.entity.DatabaseEntity
-import ru.dataquire.databasemanager.entity.UserEntity
+import ru.dataquire.databasemanager.entity.OwnerEntity
 import java.util.UUID
 
 @Repository
 interface DatabaseRepository : JpaRepository<DatabaseEntity, UUID> {
-    fun findDatabaseEntityByDatabaseNameAndAndDbmsAndAndUserEntity(
+
+    fun findByDatabaseNameAndDbmsAndOwnerEntity(
         database: String,
         dbms: String,
-        userEntity: UserEntity
+        ownerEntity: OwnerEntity
     ): DatabaseEntity
 
-    fun findDatabaseEntityByDatabaseNameAndDbms(
+    fun findByDatabaseNameAndDbms(
         database: String,
         dbms: String,
     ): DatabaseEntity
 
-    fun findDatabaseEntityByDatabaseNameAndDbmsAndSystemName(
+    fun findByDatabaseNameAndDbmsAndSystemName(
         database: String,
         dbms: String,
         systemName: String
     ): DatabaseEntity
 
-    fun findDatabaseEntityByUserEntityAndDbmsAndSystemNameAndDatabaseName(
-        userEntity: UserEntity,
+    fun findByOwnerEntityAndDbmsAndSystemNameAndDatabaseName(
+        ownerEntity: OwnerEntity,
         dbms: String,
         systemName: String,
         databaseName: String
     ): DatabaseEntity
 
-    fun findAllByUserEntity(userEntity: UserEntity): List<DatabaseForList>
-    fun findDatabaseEntityByUserEntityAndSystemName(userEntity: UserEntity, systemName: String): Database
+    fun findAllByOwnerEntity(ownerEntity: OwnerEntity): List<DatabaseForList>
+    fun findByOwnerEntityAndSystemName(
+        ownerEntity: OwnerEntity,
+        systemName: String
+    ): Database
 
-    fun findAllByUserEntityAndDbms(userEntity: UserEntity, dbms: String): List<DatabaseInDBMS>
+    fun findAllByOwnerEntityAndDbms(
+        ownerEntity: OwnerEntity,
+        dbms: String
+    ): List<DatabaseInDBMS>
 }
