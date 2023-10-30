@@ -1,10 +1,10 @@
 Configuration:
   status: warn
-  name: table-manager
+  name: dataquire-gateway
   Properties:
     Property:
       - name: app-name
-        value: "table-manager"
+        value: "dataquire-gateway"
       - name: log-path
         value: "${app-name}/logs/${app-name}"
       - name: log-archive-path

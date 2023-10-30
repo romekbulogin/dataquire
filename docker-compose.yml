@@ -23,66 +23,94 @@ services:
 
   dataquire-eureka-server:
     build:
-      dockerfile: ./Dataquire-Eureka-Server/Dockerfile
-      context: .
+      context: ./Dataquire-Eureka-Server
+      dockerfile: Dockerfile
     image: dataquire-eureka-server
     container_name: 'dataquire-eureka-server'
+    volumes:
+      - ./dataquire-eureka-server/logs:/dataquire-eureka-server/dataquire-eureka-server/logs
+      - ./Dataquire-Eureka-Server/build/resources/main:/dataquire-eureka-server/config
     restart: always
     ports:
       - "8761:8761"
 
   dataquire-gateway:
     build:
-      dockerfile: ./Dataquire-Gateway/Dockerfile
-      context: .
+      context: ./Dataquire-Gateway
+      dockerfile: Dockerfile
     image: dataquire-gateway
     container_name: 'dataquire-gateway'
+    volumes:
+      - ./dataquire-gateway/logs:/dataquire-gateway/dataquire-gateway/logs
+      - ./Dataquire-Gateway/build/resources/main:/dataquire-gateway/config
     restart: always
     ports:
       - "80:8081"
 
   authorization-service:
     build:
-      context: ./
-      dockerfile: Authorization-Service/Dockerfile
+      context: ./Authorization-Service
+      dockerfile: Dockerfile
     image: authorization-service
     container_name: 'authorization-service'
+    volumes:
+      - ./authorization-service/logs:/authorization-service/authorization-service/logs
+      - ./Authorization-Service/build/resources/main:/authorization-service/config
     restart: always
     ports:
       - "587:587"
 
   instance-keeper:
     build:
-      context: ./
-      dockerfile: Instance-Keeper/Dockerfile
+      context: ./Instance-Keeper
+      dockerfile: Dockerfile
     image: instance-keeper
     container_name: 'instance-keeper'
+    volumes:
+      - ./instance-keeper/logs:/instance-keeper/instance-keeper/logs
+      - ./Instance-Keeper/build/resources/main:/instance-keeper/config
     restart: always
 
   database-manager:
     build:
-      dockerfile: ./Database-Manager/Dockerfile
-      context: .
+      context: ./Database-Manager
+      dockerfile: Dockerfile
     image: database-manager
     container_name: 'database-manager'
+    volumes:
+      - ./database-manager/logs:/database-manager/database-manager/logs
+      - ./Database-Manager/build/resources/main:/database-manager/config
+    restart: always
 
   query-creator:
     build:
-      dockerfile: ./Query-Creator/Dockerfile
-      context: .
+      context: ./Query-Creator
+      dockerfile: Dockerfile
     image: query-creator
     container_name: 'query-creator'
+    volumes:
+      - ./query-creator/logs:/query-creator/query-creator/logs
+      - ./Query-Creator/build/resources/main:/query-creator/config
+    restart: always
 
   query-executor:
     build:
-      dockerfile: ./Query-Executor/Dockerfile
-      context: .
+      context: ./Query-Executor
+      dockerfile: Dockerfile
     image: query-executor
     container_name: 'query-executor'
+    volumes:
+      - ./query-executor/logs:/query-executor/query-executor/logs
+      - ./Query-Executor/build/resources/main:/query-executor/config
+    restart: always
 
   table-manager:
     build:
-      dockerfile: ./Table-Manager/Dockerfile
-      context: .
+      context: ./Table-Manager
+      dockerfile: Dockerfile
     image: table-manager
     container_name: 'table-manager'
+    volumes:
+      - ./table-manager/logs:/table-manager/table-manager/logs
+      - ./Table-Manager/build/resources/main:/table-manager/config
+    restart: always

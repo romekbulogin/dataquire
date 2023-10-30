@@ -1,10 +1,10 @@
 Configuration:
   status: warn
-  name: table-manager
+  name: dataquire-eureka-server
   Properties:
     Property:
       - name: app-name
-        value: "table-manager"
+        value: "dataquire-eureka-server"
       - name: log-path
         value: "${app-name}/logs/${app-name}"
       - name: log-archive-path
