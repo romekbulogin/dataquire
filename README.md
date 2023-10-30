@@ -1,5 +1,5 @@
 # DATAQUIRE
-## DATAQUIRE - Universal database management system.
+## DATAQUIRE - Universal database manager.
 This project was developed as a final qualification work.
 Technologies:
 - Kotlin 1.8.0
