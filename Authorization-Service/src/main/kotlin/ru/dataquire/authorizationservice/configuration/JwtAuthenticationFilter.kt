@@ -12,8 +12,10 @@ import org.springframework.web.filter.OncePerRequestFilter
 import ru.dataquire.authorizationservice.service.JwtService
 
 @Component
-class JwtAuthenticationFilter(private val jwtService: JwtService, private val userDetailsService: UserDetailsService) :
-    OncePerRequestFilter() {
+class JwtAuthenticationFilter(
+    private val jwtService: JwtService,
+    private val userDetailsService: UserDetailsService
+) : OncePerRequestFilter() {
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,

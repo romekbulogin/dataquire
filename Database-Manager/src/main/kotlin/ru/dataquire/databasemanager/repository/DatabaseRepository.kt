@@ -11,7 +11,6 @@ import java.util.UUID
 
 @Repository
 interface DatabaseRepository : JpaRepository<DatabaseEntity, UUID> {
-
     fun findByDatabaseNameAndDbmsAndOwnerEntity(
         database: String,
         dbms: String,

@@ -6,15 +6,12 @@ spring:
   rabbitmq:
     consumer:
       exchange: query-executor-exchange
-      request:
-        queue: query-executor-queue
-        routing-key: query-executor-routing-key
-    username: admin
-    password: admin
+    username: guest
+    password: guest
     ports:
       - "5672:5672"
       - "15672:15672"
-    addresses: dataquire-rabbit
+    addresses: localhost
   application:
     name: query-creator
 eureka:

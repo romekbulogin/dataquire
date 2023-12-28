@@ -13,8 +13,17 @@ class InstanceService(
 ) {
     private val logger = KotlinLogging.logger { }
     fun findInstanceByDbms(dbms: String) = try {
-        logger.info("[FIND INSTANCE]: $dbms")
+        logger.info("[FIND INSTANCE BY DBMS]: $dbms")
         val instance = instanceRepository.findByDbms(dbms)
+        ResponseEntity.ok().body(instance)
+    } catch (ex: Exception) {
+        logger.error(ex.message)
+        ResponseEntity(mapOf("error" to ex.message), HttpStatus.BAD_REQUEST)
+    }
+
+    fun findInstanceByTitle(title: String) = try {
+        logger.info("[FIND INSTANCE BY TITLE]: $title")
+        val instance = instanceRepository.findByTitle(title)
         ResponseEntity.ok().body(instance)
     } catch (ex: Exception) {
         logger.error(ex.message)

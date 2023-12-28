@@ -8,18 +8,14 @@ import org.springframework.stereotype.Service
 import ru.dataquire.databasemanager.dto.UserCredentials
 import ru.dataquire.databasemanager.entity.DatabaseEntity
 import ru.dataquire.databasemanager.feign.InstanceKeeperClient
-import ru.dataquire.databasemanager.request.InstanceEntity
 import ru.dataquire.databasemanager.repository.DatabaseRepository
 import ru.dataquire.databasemanager.repository.OwnerRepository
-import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
-import ru.dataquire.databasemanager.request.DatabaseRequest
-import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
-import ru.dataquire.databasemanager.request.OwnDatabaseRequest
 import ru.dataquire.databasemanager.extension.QueryForUser.Companion.convertCreateUserQuery
 import ru.dataquire.databasemanager.extension.QueryForUser.Companion.convertDatabaseGrant
 import ru.dataquire.databasemanager.extension.QueryForUser.Companion.convertDeleteUserQuery
 import ru.dataquire.databasemanager.extension.QueryForUser.Companion.convertUpdatePasswordQuery
 import ru.dataquire.databasemanager.extension.QueryForUser.Companion.convertUpdateUsernameQuery
+import ru.dataquire.databasemanager.request.*
 import java.sql.DriverManager
 import java.util.*
 import javax.crypto.Cipher
@@ -36,7 +32,7 @@ class DatabaseService(
 ) {
     private val logger = KotlinLogging.logger { }
     fun createDatabase(request: DatabaseRequest, token: String): ResponseEntity<Map<String, String>> {
-        val targetDatabase = findInstance(request.dbms)
+        val targetDatabase = findInstanceByDbms(request.dbms)
         val systemName = generateSystemName()
         val user = createUser(targetDatabase)
         val passwordBytes = user.password.toByteArray(Charsets.UTF_8)
@@ -94,7 +90,7 @@ class DatabaseService(
     fun addYourOwnDatabase(request: OwnDatabaseRequest, token: String) = try {
         val systemName = generateSystemName()
 
-        val targetDatabase = findInstance(request.dbms)
+        val targetDatabase = findInstanceByDbms(request.dbms)
         request.url = replaceIpAddress(targetDatabase.url, request.url, request.database)
         logger.info(request.toString())
         val currentUser = getOwnerEntity(token)
@@ -127,7 +123,7 @@ class DatabaseService(
         )
     }
 
-    fun deleteDatabase(request: DeleteDatabaseRequest, token: String) = try {
+    fun deleteDatabaseInServer(request: DeleteDatabaseServerRequest, token: String) = try {
         val currentUser = getOwnerEntity(token)
         val currentDatabase =
             databaseRepository.findByOwnerEntityAndDbmsAndSystemNameAndDatabaseName(
@@ -136,16 +132,15 @@ class DatabaseService(
                 request.systemName,
                 request.database
             )
-        if (currentDatabase.isImported == true) {
-            val targetDatabase = findInstance(request.dbms)
-            DriverManager.getConnection(
-                targetDatabase.url, targetDatabase.username, targetDatabase.password
-            ).use { connection ->
-                DSL.using(connection).dropDatabase(request.systemName).execute()
-                connection?.createStatement()
-                    ?.execute(convertDeleteUserQuery(request.dbms).replace("usertag", currentDatabase.login!!))
-                logger.info("Database: ${request.database} deleted successfully")
-            }
+        val targetDatabase = findInstanceByTitle(request.title)
+        DriverManager.getConnection(
+            targetDatabase.url, targetDatabase.username, targetDatabase.password
+        ).use { connection ->
+            DSL.using(connection).dropDatabase(request.systemName).execute()
+            connection?.createStatement()
+                ?.execute(convertDeleteUserQuery(request.dbms).replace("usertag", currentDatabase.login!!))
+            databaseRepository.delete(currentDatabase)
+            logger.info("Database: ${request.database} deleted successfully")
         }
         ResponseEntity.ok().body(
             mapOf(
@@ -161,10 +156,11 @@ class DatabaseService(
         )
     }
 
-    fun deleteYourOwnDatabase(request: DeleteDatabaseRequest, token: String) = try {
+    fun deleteDatabaseLocal(request: DeleteDatabaseRequest, token: String) = try {
         val currentUser = getOwnerEntity(token)
         val currentDatabase =
-            databaseRepository.findByDatabaseNameAndDbmsAndSystemName(
+            databaseRepository.findByOwnerEntityAndDbmsAndSystemNameAndDatabaseName(
+                currentUser,
                 request.database,
                 request.dbms,
                 request.systemName
@@ -247,7 +243,7 @@ class DatabaseService(
                 request.systemName,
                 request.database
             )
-        val instance = findInstance(currentDatabase.dbms!!)
+        val instance = findInstanceByDbms(currentDatabase.dbms!!)
         DriverManager.getConnection(
             instance.url, instance.username, instance.password
         ).use { connection ->
@@ -348,7 +344,8 @@ class DatabaseService(
         true
     ).lowercase(Locale.getDefault())
 
-    private fun findInstance(dbms: String) = instanceKeeperClient.findInstanceByDbms(dbms)
+    private fun findInstanceByDbms(dbms: String) = instanceKeeperClient.findInstanceByDbms(dbms)
+    private fun findInstanceByTitle(title: String) = instanceKeeperClient.findInstanceByTitle(title)
     private fun createUser(instance: InstanceEntity): UserCredentials {
         return try {
             DriverManager.getConnection(

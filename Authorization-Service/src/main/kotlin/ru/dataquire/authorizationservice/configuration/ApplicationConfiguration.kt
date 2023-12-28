@@ -13,7 +13,9 @@ import ru.dataquire.authorizationservice.repository.OwnerRepository
 
 
 @Configuration
-class ApplicationConfiguration(private val ownerRepository: OwnerRepository) {
+class ApplicationConfiguration(
+    private val ownerRepository: OwnerRepository
+) {
 
     @Bean
     fun userDetailsService(): UserDetailsService? {

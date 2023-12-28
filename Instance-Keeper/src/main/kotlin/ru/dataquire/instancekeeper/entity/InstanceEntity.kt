@@ -5,7 +5,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "instance")
-data class InstanceEntity(
+class InstanceEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,
@@ -18,6 +18,9 @@ data class InstanceEntity(
 
     @Column(nullable = false)
     var password: String? = null,
+
+    @Column(nullable = false, unique = true)
+    var title: String? = null,
 
     @Column(nullable = false)
     var dbms: String? = null,

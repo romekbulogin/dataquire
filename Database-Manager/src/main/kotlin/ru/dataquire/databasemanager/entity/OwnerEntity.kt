@@ -13,16 +13,16 @@ class OwnerEntity {
     var id: UUID? = null
 
     @Column(unique = true, nullable = false)
-    private var username: String? = null
+    var username: String? = null
 
     @Column(unique = true, nullable = false)
-    private var email: String? = null
+    var email: String? = null
 
     @Column(nullable = false)
-    private var password: String? = null
+    var password: String? = null
 
     @Column(nullable = false)
-    private var isActivated: Boolean? = null
+    var isActivated: Boolean? = null
 
     @Column(nullable = false)
     private var activatedUUID: String? = null
@@ -36,6 +36,7 @@ class OwnerEntity {
 
     @OneToMany(mappedBy = "ownerEntity")
     var databases: MutableList<DatabaseEntity>? = null
+
     fun addDatabase(databaseEntity: DatabaseEntity) {
         this.databases?.add(databaseEntity)
     }

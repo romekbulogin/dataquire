@@ -13,6 +13,10 @@ class InstanceController(
     fun findInstanceByDbms(@PathVariable dbms: String) =
         instanceService.findInstanceByDbms(dbms)
 
+    @GetMapping("/find")
+    fun findInstanceByTitle(@RequestParam title: String) =
+        instanceService.findInstanceByTitle(title)
+
     @PostMapping("/save")
     fun saveInstance(@RequestBody instanceEntity: InstanceEntity) =
         instanceService.saveInstance(instanceEntity)

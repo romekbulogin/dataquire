@@ -1,6 +1,5 @@
 package ru.dataquire.authorizationservice.controller
 
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import ru.dataquire.authorizationservice.request.AuthenticationRequest
 import ru.dataquire.authorizationservice.request.RegistrationRequest
@@ -11,7 +10,6 @@ import ru.dataquire.authorizationservice.service.AuthenticationService
 class AuthenticationController(
     private val authenticationService: AuthenticationService
 ) {
-
     @PostMapping("/registration")
     fun registration(@RequestBody request: RegistrationRequest) =
         authenticationService.registration(request)

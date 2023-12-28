@@ -28,9 +28,6 @@ data class DatabaseEntity(
     @Column(nullable = false)
     var url: String? = null,
 
-    @Column(nullable = false)
-    var isImported: Boolean? = null,
-
     @ManyToOne
     var ownerEntity: OwnerEntity? = null
 )

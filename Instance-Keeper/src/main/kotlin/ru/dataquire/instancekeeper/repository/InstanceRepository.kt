@@ -7,4 +7,5 @@ import ru.dataquire.instancekeeper.entity.InstanceEntity
 @Repository
 interface InstanceRepository : JpaRepository<InstanceEntity, Int> {
     fun findByDbms(dbms: String): InstanceEntity
+    fun findByTitle(title: String): InstanceEntity
 }

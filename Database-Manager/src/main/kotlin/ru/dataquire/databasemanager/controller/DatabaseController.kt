@@ -1,10 +1,7 @@
 package ru.dataquire.databasemanager.controller
 
 import org.springframework.web.bind.annotation.*
-import ru.dataquire.databasemanager.request.ChangeCredentialsRequest
-import ru.dataquire.databasemanager.request.DatabaseRequest
-import ru.dataquire.databasemanager.request.DeleteDatabaseRequest
-import ru.dataquire.databasemanager.request.OwnDatabaseRequest
+import ru.dataquire.databasemanager.request.*
 import ru.dataquire.databasemanager.service.DatabaseService
 
 @RestController
@@ -18,11 +15,11 @@ class DatabaseController(
         @RequestHeader("Authorization") token: String
     ) = databaseService.createDatabase(request, token)
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/delete/on_server")
     fun deleteDatabase(
-        @RequestBody request: DeleteDatabaseRequest,
+        @RequestBody request: DeleteDatabaseServerRequest,
         @RequestHeader("Authorization") token: String
-    ) = databaseService.deleteDatabase(request, token)
+    ) = databaseService.deleteDatabaseInServer(request, token)
 
     @GetMapping("/my")
     fun viewDatabases(
@@ -53,11 +50,11 @@ class DatabaseController(
         @RequestHeader("Authorization") token: String
     ) = databaseService.addYourOwnDatabase(request, token)
 
-    @DeleteMapping("/external/delete")
+    @DeleteMapping("/delete")
     fun deleteYourOwnDatabase(
         @RequestBody request: DeleteDatabaseRequest,
         @RequestHeader("Authorization") token: String
-    ) = databaseService.deleteYourOwnDatabase(request, token)
+    ) = databaseService.deleteDatabaseLocal(request, token)
 
     @GetMapping("/{systemName}/{table}/structure")
     fun getStructureOfTable(

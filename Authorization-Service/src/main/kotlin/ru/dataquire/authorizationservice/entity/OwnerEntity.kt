@@ -31,6 +31,7 @@ class OwnerEntity : UserDetails {
     private var activatedUUID: String? = null
 
     @CreationTimestamp
+    @Column(nullable = false)
     private var registrationDate: Date? = null
 
     @Enumerated(EnumType.STRING)
@@ -39,6 +40,9 @@ class OwnerEntity : UserDetails {
 
     @OneToMany(mappedBy = "ownerEntity")
     private var databases: MutableList<DatabaseEntity>? = null
+
+    @OneToMany(mappedBy = "ownerEntity")
+    private var queryHistory: MutableList<QueryHistoryEntity>? = null
 
     fun setActivatedUUID(uuid: String) {
         this.activatedUUID = uuid
