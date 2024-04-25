@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: database-manager
+  datasource:
+    url: jdbc:postgresql://localhost:5432/users
+    username: postgres
+    password: 1337
+    driver-class-name: org.postgresql.Driver
+feign:
+  instance-keeper:
+    address: http://localhost:8084/
+eureka:
+  client:
+    service-url:
+      defaultZone: "http://localhost:8761/eureka"
+  instance:
+    ip-address: database-manager
+    prefer-ip-address: true
+secret:
+  key: 0JvQrtCR0JvQriDQodCe0KHQkNCi0Kwg0JHQntCb0KzQqNCY0JUg0JLQntCb0J7QodCQ0KLQq9CVINCl0KPQmA==
+logging:
+  config: 'classpath:log4j2.yml'
+server:
+  port: 8085
